@@ -47,7 +47,8 @@
         let globalReverb;
         let video;
         let poseNet;
-        let poses = [];
+        let handX = null;
+        let handY = null;
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
@@ -55,23 +56,20 @@
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
 
-            // Configurar reverb global con mayor amplitud
             globalReverb = new p5.Reverb();
-            globalReverb.set(12, 6); // Reverb más larga y envolvente
+            globalReverb.set(12, 6);
 
-            for (let i = 0; i < 300; i++) { // Reducido a 300 partículas para rendimiento en móviles
+            for (let i = 0; i < 300; i++) {
                 particles[i] = new Particle();
             }
 
             background(0);
-            noLoop();  // Evitar que el draw se ejecute hasta que el usuario interactúe
+            noLoop(); 
 
-            // Configurar la cámara
             video = createCapture(VIDEO);
             video.size(width, height);
             video.hide();
 
-            // Configurar PoseNet para detección de poses
             poseNet = ml5.poseNet(video, modelReady);
             poseNet.on('pose', gotPoses);
         }
@@ -81,7 +79,15 @@
         }
 
         function gotPoses(results) {
-            poses = results;
+            if (results.length > 0) {
+                let pose = results[0].pose;
+                let rightWrist = pose.keypoints.find(point => point.part === "rightWrist");
+                if (rightWrist && rightWrist.score > 0.5) {
+                    handX = map(rightWrist.position.x, 0, video.width, 0, width);
+                    handY = map(rightWrist.position.y, 0, video.height, 0, height);
+                    isInteracting = true;
+                }
+            }
         }
 
         function draw() {
@@ -96,17 +102,10 @@
                     let v = p5.Vector.fromAngle(angle);
                     v.setMag(0.5);
 
-                    // Si está interactuando, modificar la dirección hacia la mano detectada
-                    if (isInteracting && poses.length > 0) {
-                        let pose = poses[0].pose;
-                        let rightWrist = pose.keypoints.find(point => point.part === "rightWrist");
-                        if (rightWrist && rightWrist.score > 0.5) {
-                            let handPosX = map(rightWrist.position.x, 0, video.width, 0, width);
-                            let handPosY = map(rightWrist.position.y, 0, video.height, 0, height);
-                            let mouseVector = createVector(handPosX - x * scl, handPosY - y * scl);
-                            angle = mouseVector.heading();
-                            v = p5.Vector.fromAngle(angle);
-                        }
+                    if (isInteracting && handX !== null && handY !== null) {
+                        let mouseVector = createVector(handX - x * scl, handY - y * scl);
+                        angle = mouseVector.heading();
+                        v = p5.Vector.fromAngle(angle);
                     }
 
                     flowfield[index] = v;
@@ -126,19 +125,14 @@
 
         function startInteraction() {
             if (!audioStarted) {
-                userStartAudio();  // Iniciar el contexto de audio
+                userStartAudio(); 
                 audioStarted = true;
-                loop();  // Comenzar el bucle de draw
-                document.getElementById('start-button').style.display = 'none';  // Ocultar el botón de inicio
+                loop(); 
+                document.getElementById('start-button').style.display = 'none';  
             }
         }
 
-        function modulateInteraction(x, y) {
-            // Estira las partículas hacia la posición de la mano (o mouse/touch)
-            for (let i = 0; i < particles.length; i++) {
-                particles[i].stretchTowards(x, y);
-            }
-        }
+        document.getElementById('start-button').addEventListener('click', startInteraction);
 
         class Particle {
             constructor() {
@@ -148,19 +142,17 @@
                 this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
 
-                // Crear un oscilador con una frecuencia aleatoria
-                this.baseFreq = random(100, 2200); // Frecuencia base que será modulada
+                this.baseFreq = random(100, 2200); 
                 this.oscillator = new p5.Oscillator('sine');
                 this.oscillator.freq(this.baseFreq);
-                this.oscillator.amp(0);  // Comienza en silencio
+                this.oscillator.amp(0); 
 
-                // Conectar oscilador a la reverb global
                 this.oscillator.disconnect();
                 this.oscillator.connect(globalReverb);
 
-                this.shouldPlaySound = random(1) < 0.2;  // 20% de probabilidad de que tenga sonido activo
-                this.soundDuration = 10000;  // Duración del sonido en milisegundos
-                this.nextSoundTime = millis() + random(3000, 8000);  // Tiempo hasta que suene nuevamente
+                this.shouldPlaySound = random(1) < 0.2; 
+                this.soundDuration = 10000; 
+                this.nextSoundTime = millis() + random(3000, 8000); 
             }
 
             follow(vectors) {
@@ -177,30 +169,21 @@
 
             update() {
                 this.vel.add(this.acc);
-                this.vel.limit(maxSpeed);  // Utiliza maxSpeed modulado
+                this.vel.limit(maxSpeed); 
                 this.pos.add(this.vel);
                 this.acc.mult(0);
 
-                // Controlar el sonido en función del tiempo
                 let currentTime = millis();
                 if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
                     this.oscillator.start();
-                    this.oscillator.amp(0.5, 0.5); // Fade in al inicio
+                    this.oscillator.amp(0.5, 0.5); 
                     setTimeout(() => {
-                        this.oscillator.amp(0, 1); // Fade out al final
-                        setTimeout(() => this.oscillator.stop(), 1000); // Apagar el oscilador después del fade out
+                        this.oscillator.amp(0, 1); 
+                        setTimeout(() => this.oscillator.stop(), 1000); 
                     }, this.soundDuration - 1000);
 
-                    // Configurar el próximo tiempo para que suene
                     this.nextSoundTime = currentTime + random(3000, 8000);
                 }
-            }
-
-            stretchTowards(x, y) {
-                // Estirar la partícula hacia el punto (x, y)
-                let stretchForce = createVector(x - this.pos.x, y - this.pos.y);
-                stretchForce.setMag(0.5);  // Controla la intensidad del estiramiento
-                this.applyForce(stretchForce);
             }
 
             show() {
@@ -218,8 +201,6 @@
                 this.prevPos = this.pos.copy();
             }
         }
-
-        document.getElementById('start-button').addEventListener('click', startInteraction);
     </script>
 </body>
 </html>
