@@ -27,6 +27,8 @@
         let audioStarted = false;
 
         let globalReverb;
+        let startTime;
+        let interactionEnabled = false;
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
@@ -47,6 +49,11 @@
 
         function draw() {
             if (!audioStarted) return;
+
+            // Habilitar la interacción después de 20 segundos
+            if (millis() - startTime > 20000) {
+                interactionEnabled = true;
+            }
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -76,17 +83,22 @@
             if (!audioStarted) {
                 userStartAudio();  // Iniciar el contexto de audio
                 audioStarted = true;
+                startTime = millis();  // Registrar el tiempo de inicio
                 loop();  // Comenzar el bucle de draw
             }
         }
 
         function mouseMoved() {
-            modulateInteraction(mouseX, mouseY);
+            if (interactionEnabled) {
+                modulateInteraction(mouseX, mouseY);
+            }
         }
 
         function touchMoved() {
-            modulateInteraction(touchX, touchY);
-            return false;  // Prevenir el comportamiento por defecto de desplazamiento en dispositivos táctiles
+            if (interactionEnabled) {
+                modulateInteraction(touchX, touchY);
+                return false;  // Prevenir el comportamiento por defecto de desplazamiento en dispositivos táctiles
+            }
         }
 
         function modulateInteraction(x, y) {
