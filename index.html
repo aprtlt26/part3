@@ -3,52 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Fluid Particle System</title>
+    <title>Fluid Particle System</title>
     <style>
         body, html {
             margin: 0;
             padding: 0;
             overflow: hidden;
             background: black;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        #start-button {
-            position: absolute;
-            background-color: #ffffff;
-            color: #000000;
-            padding: 10px 20px;
-            font-size: 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            z-index: 10;
         }
     </style>
 </head>
 <body>
-    <button id="start-button">Iniciar</button>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ml5/0.6.0/ml5.min.js"></script>
     <script>
-        let inc = 0.1;
-        let scl = 10;
-        let cols, rows;
-        let zoff = 0;
         let particles = [];
         let flowfield;
-        let maxSpeed = 2;
-        let audioStarted = false;
-        let isInteracting = false;
-
-        let globalReverb;
-        let video;
-        let poseNet;
-        let handX = null;
-        let handY = null;
+        let cols, rows;
+        let scl = 20; // Aumentar escala para reducir la carga en dispositivos móviles
+        let inc = 0.1;
+        let zoff = 0;
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
@@ -56,43 +29,15 @@
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
 
-            globalReverb = new p5.Reverb();
-            globalReverb.set(12, 6);
-
-            for (let i = 0; i < 300; i++) {
+            // Crear menos partículas para mejorar el rendimiento
+            for (let i = 0; i < 150; i++) {
                 particles[i] = new Particle();
             }
 
             background(0);
-            noLoop(); 
-
-            video = createCapture(VIDEO);
-            video.size(width, height);
-            video.hide();
-
-            poseNet = ml5.poseNet(video, modelReady);
-            poseNet.on('pose', gotPoses);
-        }
-
-        function modelReady() {
-            console.log('PoseNet listo');
-        }
-
-        function gotPoses(results) {
-            if (results.length > 0) {
-                let pose = results[0].pose;
-                let rightWrist = pose.keypoints.find(point => point.part === "rightWrist");
-                if (rightWrist && rightWrist.score > 0.5) {
-                    handX = map(rightWrist.position.x, 0, video.width, 0, width);
-                    handY = map(rightWrist.position.y, 0, video.height, 0, height);
-                    isInteracting = true;
-                }
-            }
         }
 
         function draw() {
-            if (!audioStarted) return;
-
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
                 let xoff = 0;
@@ -100,14 +45,7 @@
                     let index = x + y * cols;
                     let angle = noise(xoff, yoff, zoff) * TWO_PI;
                     let v = p5.Vector.fromAngle(angle);
-                    v.setMag(0.5);
-
-                    if (isInteracting && handX !== null && handY !== null) {
-                        let mouseVector = createVector(handX - x * scl, handY - y * scl);
-                        angle = mouseVector.heading();
-                        v = p5.Vector.fromAngle(angle);
-                    }
-
+                    v.setMag(0.3); // Menor magnitud para un efecto más suave
                     flowfield[index] = v;
                     xoff += inc;
                 }
@@ -120,39 +58,17 @@
                 particles[i].edges();
                 particles[i].show();
             }
-            zoff += 0.003;
-        }
 
-        function startInteraction() {
-            if (!audioStarted) {
-                userStartAudio(); 
-                audioStarted = true;
-                loop(); 
-                document.getElementById('start-button').style.display = 'none';  
-            }
+            zoff += 0.01; // Incremento más rápido para asegurar el movimiento
         }
-
-        document.getElementById('start-button').addEventListener('click', startInteraction);
 
         class Particle {
             constructor() {
                 this.pos = createVector(random(width), random(height));
                 this.vel = createVector(0, 0);
                 this.acc = createVector(0, 0);
-                this.maxSpeed = maxSpeed;
+                this.maxSpeed = 2;
                 this.prevPos = this.pos.copy();
-
-                this.baseFreq = random(100, 2200); 
-                this.oscillator = new p5.Oscillator('sine');
-                this.oscillator.freq(this.baseFreq);
-                this.oscillator.amp(0); 
-
-                this.oscillator.disconnect();
-                this.oscillator.connect(globalReverb);
-
-                this.shouldPlaySound = random(1) < 0.2; 
-                this.soundDuration = 10000; 
-                this.nextSoundTime = millis() + random(3000, 8000); 
             }
 
             follow(vectors) {
@@ -169,26 +85,14 @@
 
             update() {
                 this.vel.add(this.acc);
-                this.vel.limit(maxSpeed); 
+                this.vel.limit(this.maxSpeed);
                 this.pos.add(this.vel);
                 this.acc.mult(0);
-
-                let currentTime = millis();
-                if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
-                    this.oscillator.start();
-                    this.oscillator.amp(0.5, 0.5); 
-                    setTimeout(() => {
-                        this.oscillator.amp(0, 1); 
-                        setTimeout(() => this.oscillator.stop(), 1000); 
-                    }, this.soundDuration - 1000);
-
-                    this.nextSoundTime = currentTime + random(3000, 8000);
-                }
             }
 
             show() {
-                stroke(255, 100);
-                strokeWeight(1);
+                stroke(255, 150); // Color blanco con algo de transparencia
+                strokeWeight(2); // Un poco más grueso para ser más visible en móviles
                 line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
                 this.prevPos = this.pos.copy();
             }
@@ -200,6 +104,12 @@
                 if (this.pos.y < 0) this.pos.y = height;
                 this.prevPos = this.pos.copy();
             }
+        }
+
+        // Ajuste el tamaño del canvas cuando se cambia el tamaño de la ventana
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+            background(0); // Redibujar el fondo después de cambiar el tamaño
         }
     </script>
 </body>
