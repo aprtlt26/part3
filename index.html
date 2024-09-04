@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fluid Particle System with Neon Light Effect</title>
+    <title>Fluid Particle System with White Noise and LFO</title>
     <style>
         body, html {
             margin: 0;
@@ -35,10 +35,10 @@
         let zoff = 0;
         let audioStarted = false;
 
-        // Efectos de sonido
-        let globalReverb;
-        let delays = [];
-        let compressor;
+        // Sonido
+        let whiteNoise, noiseFilter, lfo;
+        let schumannOscillator, reverb, distortion;
+        let mouseNoise;
 
         // Puntos de luz de neón
         let neonPoints = [];
@@ -49,26 +49,33 @@
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
 
-            // Configurar reverb y delays
-            globalReverb = new p5.Reverb();
-            globalReverb.set(15, 8);  // Reverb larga
+            // Crear ruido blanco filtrado
+            whiteNoise = new p5.Noise('white');
+            noiseFilter = new p5.LowPass();
+            noiseFilter.freq(500);  // Filtrar a 500 Hz
+            whiteNoise.disconnect();
+            whiteNoise.connect(noiseFilter);
+            lfo = new p5.Oscillator('sine', 0.2);  // LFO lento
+            lfo.disconnect();
+            lfo.start();
+            lfo.amp(1, 5);  // Pulso cada 5 segundos
 
-            for (let i = 0; i < 4; i++) {
-                let delay = new p5.Delay();
-                delay.delayTime(0.03 + i * 0.01);  // Retrasos cortos y distintos
-                delays.push(delay);
-            }
+            // Oscilador Schumann (7.83 Hz)
+            schumannOscillator = new p5.Oscillator('sine', 7.83);
+            schumannOscillator.amp(0.05);  // Volumen bajo
+            schumannOscillator.start();
 
-            compressor = new p5.Compressor();
-            compressor.attack(0.01);
-            compressor.release(0.8);
-            compressor.ratio(6);
-            compressor.threshold(-24);
+            // Reverberación profunda y distorsión
+            reverb = new p5.Reverb();
+            reverb.process(noiseFilter, 8, 5);  // Reverberación larga
+            distortion = new p5.Distortion(0.4);  // Distorsión ligera
+            distortion.process(noiseFilter);
+            
+            // Ruido para el puntero del mouse
+            mouseNoise = new p5.Noise('white');
+            mouseNoise.amp(0);  // Silencio al principio
+            mouseNoise.start();
 
-            // Crear partículas
-            for (let i = 0; i < 600; i++) {
-                particles[i] = new Particle();
-            }
             background(0);
             noLoop();  // Evitar que draw corra hasta que se presione el botón
         }
@@ -116,24 +123,6 @@
                 this.acc = createVector(0, 0);
                 this.maxSpeed = 2;
                 this.prevPos = this.pos.copy();
-
-                // Crear oscilador para sonido
-                this.oscillator = new p5.Oscillator('sine');
-                this.oscillator.freq(random(200, 8000));  // Frecuencia aleatoria
-                this.oscillator.amp(0);
-                this.oscillator.start();
-
-                this.oscillator.disconnect();
-                this.oscillator.connect(globalReverb);
-
-                // Conectar a los delays
-                for (let delay of delays) {
-                    delay.process(this.oscillator, 0.1, 0.4, 100);
-                }
-                compressor.process(this.oscillator);
-
-                this.shouldPlaySound = random(1) < 0.2;  // Probabilidad de que cada partícula tenga sonido
-                this.soundDuration = random(300, 1000);  // Duración del sonido
             }
 
             follow(vectors) {
@@ -153,14 +142,6 @@
                 this.vel.limit(this.maxSpeed);
                 this.pos.add(this.vel);
                 this.acc.mult(0);
-
-                // Activar sonido en función del movimiento
-                if (this.shouldPlaySound && this.vel.mag() > 0.5) {
-                    this.oscillator.amp(0.05, 0.05);  // Fade in
-                    setTimeout(() => {
-                        this.oscillator.amp(0, 0.1);  // Fade out
-                    }, this.soundDuration);
-                }
             }
 
             show() {
@@ -209,10 +190,18 @@
         function mouseMoved() {
             let neonPoint = new NeonPoint(mouseX, mouseY);
             neonPoints.push(neonPoint);
+
+            // Activar ruido distorsionado mientras el mouse se mueve
+            mouseNoise.amp(0.2, 0.05);  // Sonido rápido al mover el mouse
+        }
+
+        function mouseReleased() {
+            mouseNoise.amp(0, 0.05);  // Apagar sonido cuando el mouse deja de moverse
         }
 
         document.getElementById("startButton").addEventListener("click", () => {
             userStartAudio().then(() => {
+                whiteNoise.start();  // Iniciar el ruido blanco
                 loop();  // Iniciar el ciclo de animación
                 document.getElementById("startButton").style.display = "none";  // Ocultar el botón
             }).catch((error) => {
@@ -226,6 +215,7 @@
     </script>
 </body>
 </html>
+
 
 
 
