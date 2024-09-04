@@ -119,7 +119,7 @@
 
                 // Crear oscilador para sonido
                 this.oscillator = new p5.Oscillator('sine');
-                this.oscillator.freq(random(100, 1000));  // Frecuencia aleatoria
+                this.oscillator.freq(random(200, 8000));  // Frecuencia aleatoria
                 this.oscillator.amp(0);
                 this.oscillator.start();
 
@@ -128,11 +128,11 @@
 
                 // Conectar a los delays
                 for (let delay of delays) {
-                    delay.process(this.oscillator, 0.1, 0.4, 200);
+                    delay.process(this.oscillator, 0.1, 0.4, 600);
                 }
                 compressor.process(this.oscillator);
 
-                this.shouldPlaySound = random(1) < 0.1;  // Probabilidad de que cada partícula tenga sonido
+                this.shouldPlaySound = random(1) < 0.2;  // Probabilidad de que cada partícula tenga sonido
                 this.soundDuration = random(300, 1000);  // Duración del sonido
             }
 
@@ -185,14 +185,14 @@
                 this.y = y;
                 this.opacity = 255;
                 this.size = 20;  // Tamaño del punto de luz
-                this.glowSize = 40;  // Tamaño del resplandor de neón
-                this.color = color(255, 255, 240, this.opacity);  // Luz blanca/amarilla
+                this.glowSize = 25;  // Tamaño del resplandor de neón
+                this.color = color(255, 255, 255, this.opacity);  // Luz blanca/amarilla
             }
 
             display() {
                 noStroke();
                 // Dibujar el resplandor del neón
-                fill(255, 255, 150, this.opacity * 0.2);  // Luz difusa alrededor
+                fill(255, 255, 230, this.opacity * 0.2);  // Luz difusa alrededor
                 ellipse(this.x, this.y, this.glowSize);
                 // Dibujar el punto central
                 fill(this.color);
