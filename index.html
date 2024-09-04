@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fluid Particle System with Light Interaction</title>
+    <title>Fluid Particle System with Neon Light Effect</title>
     <style>
         body, html {
             margin: 0;
@@ -40,8 +40,8 @@
         let delays = [];
         let compressor;
 
-        // Rastro del haz de luz del mouse
-        let mouseTrails = [];
+        // Puntos de luz de neón
+        let neonPoints = [];
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
@@ -74,7 +74,7 @@
         }
 
         function draw() {
-            background(0, 25);  // Fondo con baja opacidad para dejar un rastro sutil
+            background(0, 10);  // Mantener un fondo oscuro, pero sin borrar los hilos
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -99,12 +99,12 @@
                 particles[i].show();
             }
 
-            // Mostrar y actualizar el haz de luz del mouse
-            for (let i = mouseTrails.length - 1; i >= 0; i--) {
-                mouseTrails[i].display();
-                mouseTrails[i].reduceOpacity();
-                if (mouseTrails[i].opacity <= 0) {
-                    mouseTrails.splice(i, 1);  // Eliminar rastro cuando se desvanezca
+            // Mostrar el punto de luz de neón del mouse
+            for (let i = neonPoints.length - 1; i >= 0; i--) {
+                neonPoints[i].display();
+                neonPoints[i].reduceOpacity();
+                if (neonPoints[i].opacity <= 0) {
+                    neonPoints.splice(i, 1);  // Eliminar el punto de luz cuando se desvanezca
                 }
             }
         }
@@ -165,9 +165,9 @@
 
             show() {
                 stroke(255, 150);
-                strokeWeight(0.5);  // Mantener las líneas delgadas
+                strokeWeight(0.5);  // Mantener las líneas delgadas, como hilos
                 line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
-                this.prevPos = this.pos.copy();
+                this.prevPos = this.pos.copy();  // Actualizar la posición anterior
             }
 
             edges() {
@@ -179,31 +179,36 @@
             }
         }
 
-        class MouseTrail {
+        class NeonPoint {
             constructor(x, y) {
                 this.x = x;
                 this.y = y;
-                this.length = random(100, 200);  // Longitud aleatoria del haz de luz
                 this.opacity = 255;
-                this.color = color(255, 255, 200, this.opacity);  // Luz blanca/amarilla
+                this.size = 20;  // Tamaño del punto de luz
+                this.glowSize = 60;  // Tamaño del resplandor de neón
+                this.color = color(255, 255, 150, this.opacity);  // Luz blanca/amarilla
             }
 
             display() {
-                stroke(this.color);
-                strokeWeight(4);  // Ancho del haz de luz
-                line(this.x, this.y, this.x + this.length, this.y);  // Línea que simula el haz
+                noStroke();
+                // Dibujar el resplandor del neón
+                fill(255, 255, 150, this.opacity * 0.2);  // Luz difusa alrededor
+                ellipse(this.x, this.y, this.glowSize);
+                // Dibujar el punto central
+                fill(this.color);
+                ellipse(this.x, this.y, this.size);
             }
 
             reduceOpacity() {
-                this.opacity -= 10;  // Reducir opacidad lentamente
+                this.opacity -= 5;  // Reducir la opacidad lentamente
                 this.color.setAlpha(this.opacity);
             }
         }
 
-        // Agregar haz de luz al mover el mouse
+        // Agregar punto de luz al mover el mouse
         function mouseMoved() {
-            let trail = new MouseTrail(mouseX, mouseY);
-            mouseTrails.push(trail);
+            let neonPoint = new NeonPoint(mouseX, mouseY);
+            neonPoints.push(neonPoint);
         }
 
         document.getElementById("startButton").addEventListener("click", () => {
@@ -221,6 +226,5 @@
     </script>
 </body>
 </html>
-
 
 
