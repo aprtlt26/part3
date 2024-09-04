@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fluid Particle System with Sound</title>
+    <title>Fluid Particle System with Smooth Motion</title>
     <style>
         body, html {
             margin: 0;
@@ -17,13 +17,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
     <script>
-        let inc = 0.05;  // Incremento más pequeño para movimiento más lento y suave
-        let scl = 15;    // Aumentar la escala para que las partículas tengan más espacio
+        let inc = 0.02;  // Incremento pequeño para movimiento suave
+        let scl = 15;    // Aumentar la escala para partículas más espaciadas
         let cols, rows;
         let zoff = 0;
         let particles = [];
         let flowfield;
-        let maxSpeed = 1.5; // Velocidad más baja para un movimiento más suave y flotante
+        let maxSpeed = 1;  // Velocidad reducida para un movimiento más lento y suave
         let audioStarted = false;
 
         let globalReverb;
@@ -31,19 +31,20 @@
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
+            frameRate(60);  // Aseguramos una tasa de fotogramas constante para suavizar el movimiento
             cols = floor(width / scl);
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
 
-            // Configurar la reverb global
+            // Configurar reverb global
             globalReverb = new p5.Reverb();
-            globalReverb.set(8, 5);  // Reverb larga y envolvente
+            globalReverb.set(8, 5);
 
             // Configurar delay
             delay = new p5.Delay();
 
             // Crear partículas
-            for (let i = 0; i < 500; i++) {
+            for (let i = 0; i < 300; i++) {  // Reducimos la cantidad de partículas para mejorar el rendimiento
                 particles[i] = new Particle();
             }
 
@@ -51,16 +52,16 @@
         }
 
         function draw() {
-            if (!audioStarted) return;  // No dibujar ni activar sonidos hasta que el audio esté habilitado
+            if (!audioStarted) return;
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
                 let xoff = 0;
                 for (let x = 0; x < cols; x++) {
                     let index = x + y * cols;
-                    let angle = noise(xoff, yoff, zoff) * TWO_PI;
+                    let angle = noise(xoff, yoff, zoff) * TWO_PI;  // Vector basado en el ruido de Perlin
                     let v = p5.Vector.fromAngle(angle);
-                    v.setMag(0.2);  // Magnitud pequeña para un movimiento más suave y lento
+                    v.setMag(0.2);  // Magnitud pequeña para movimiento suave
                     flowfield[index] = v;
                     xoff += inc;
                 }
@@ -75,7 +76,7 @@
                 particles[i].show();
             }
 
-            zoff += 0.002;  // Movimiento más lento del campo de flujo
+            zoff += 0.001;  // Movimiento muy suave del campo de flujo
         }
 
         function mousePressed() {
@@ -105,8 +106,7 @@
                 this.oscillator.connect(globalReverb);
                 delay.process(this.oscillator, 0.2, 0.7, 2300); // Configurar delay con feedback y tiempo
 
-                // Controlar cuándo debe sonar
-                this.shouldPlaySound = random(1) < 0.2;  // 20% de probabilidad de sonido activo
+                this.shouldPlaySound = random(1) < 0.2;  // 20% de probabilidad de que tenga sonido activo
             }
 
             follow(vectors) {
@@ -123,6 +123,7 @@
 
             update() {
                 this.vel.add(this.acc);
+                this.vel.mult(0.95);  // Aplicamos un factor de fricción para suavizar el movimiento
                 this.vel.limit(this.maxSpeed);
                 this.pos.add(this.vel);
                 this.acc.mult(0);
@@ -132,7 +133,6 @@
                     this.oscillator.amp(0.3, 0.2);  // Fade in suave
                     this.oscillator.freq(map(this.pos.x, 0, width, 100, 2200));  // Modula la frecuencia con la posición
 
-                    // Ajustar reverb y delay dinámicamente con el movimiento
                     globalReverb.amp(map(this.vel.mag(), 0, maxSpeed, 0.2, 0.7));
                     delay.feedback(map(this.vel.mag(), 0, maxSpeed, 0.3, 0.6));
                 } else {
@@ -142,7 +142,7 @@
 
             show() {
                 stroke(255, 100);
-                strokeWeight(1);
+                strokeWeight(0.5);
                 line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
                 this.prevPos = this.pos.copy();
             }
