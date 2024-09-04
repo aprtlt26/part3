@@ -51,22 +51,22 @@
 
             // Configurar reverb y delays
             globalReverb = new p5.Reverb();
-            globalReverb.set(12, 6);  // Reverb larga
+            globalReverb.set(15, 8);  // Reverb larga
 
             for (let i = 0; i < 4; i++) {
                 let delay = new p5.Delay();
-                delay.delayTime(0.02 + i * 0.01);  // Retrasos cortos y distintos
+                delay.delayTime(0.03 + i * 0.01);  // Retrasos cortos y distintos
                 delays.push(delay);
             }
 
             compressor = new p5.Compressor();
             compressor.attack(0.01);
-            compressor.release(0.5);
+            compressor.release(0.9);
             compressor.ratio(8);
             compressor.threshold(-24);
 
             // Crear partículas
-            for (let i = 0; i < 800; i++) {
+            for (let i = 0; i < 600; i++) {
                 particles[i] = new Particle();
             }
             background(0);
@@ -74,7 +74,7 @@
         }
 
         function draw() {
-            background(0, 0);  // Mantener un fondo oscuro, pero sin borrar los hilos
+            background(0, 5);  // Mantener un fondo oscuro, pero sin borrar los hilos
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -180,13 +180,13 @@
         }
 
         class NeonPoint {
-            constructor(x, y) {
+            constructor(x, y, x) {
                 this.x = x;
                 this.y = y;
                 this.opacity = 255;
-                this.size = 20;  // Tamaño del punto de luz
-                this.glowSize = 25;  // Tamaño del resplandor de neón
-                this.color = color(255, 255, 255, this.opacity);  // Luz blanca/amarilla
+                this.size = 5;  // Tamaño del punto de luz
+                this.glowSize = 20;  // Tamaño del resplandor de neón
+                this.color = color(255, 255, 155, this.opacity);  // Luz blanca/amarilla
             }
 
             display() {
