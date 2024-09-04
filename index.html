@@ -189,15 +189,15 @@
                 this.x = x;
                 this.y = y;
                 this.opacity = 255;
-                this.size = 0;  // Tamaño del punto de luz
-                this.glowSize = 20;  // Tamaño del resplandor de neón
-                this.color = color(255, 255, 250, this.opacity);  // Luz blanca/amarilla
+                this.size = 20;  // Tamaño del punto de luz
+                this.glowSize = 40;  // Tamaño del resplandor de neón
+                this.color = color(255, 255, 150, this.opacity);  // Luz blanca/amarilla
             }
 
             display() {
                 noStroke();
                 // Dibujar el resplandor del neón
-                fill(255, 255, 100, this.opacity * 0.2);  // Luz difusa alrededor
+                fill(255, 255, 150, this.opacity * 0.4);  // Luz difusa alrededor
                 ellipse(this.x, this.y, this.glowSize);
                 // Dibujar el punto central
                 fill(this.color);
@@ -205,7 +205,7 @@
             }
 
             reduceOpacity() {
-                this.opacity -= 8;  // Reducir la opacidad lentamente
+                this.opacity -= 5;  // Reducir la opacidad lentamente
                 this.color.setAlpha(this.opacity);
             }
         }
@@ -218,6 +218,7 @@
 
         document.getElementById("startButton").addEventListener("click", () => {
             userStartAudio().then(() => {
+                audioStarted = true;
                 loop();  // Iniciar el ciclo de animación
                 document.getElementById("startButton").style.display = "none";  // Ocultar el botón
             }).catch((error) => {
@@ -231,6 +232,7 @@
     </script>
 </body>
 </html>
+
 
 
 
