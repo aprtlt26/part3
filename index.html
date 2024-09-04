@@ -49,7 +49,7 @@
             lfo = new p5.Oscillator('sine');
             lfo.freq(random(1 / 7, 1 / 5)); 
             lfo.disconnect();  
-            lfo.amp(0.3);  // Aumentar la amplitud del LFO para hacer el ruido verde más notable
+            lfo.amp(0.5);  // Aumentar la amplitud del LFO para hacer el ruido verde más notable
             lfo.start();
 
             for (let i = 0; i < 500; i++) {
@@ -93,9 +93,8 @@
 
             // Ajustar la amplitud del ruido verde con LFO más notable
             let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.1, 0.5);  // Aumentar el rango de amplitud
-            noiseOscillator.amp(noiseAmplitude, 0.5); 
+            noiseOscillator.amp(noiseAmplitude, 0.6); 
 
-            // Dibujar el punto negro que borra partículas
             if (erasePoint) {
                 fill(0);
                 noStroke();
@@ -127,7 +126,7 @@
                 this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
 
-                this.baseFreq = random(200, 6000);  
+                this.baseFreq = random(100, 7000);  
                 this.oscillator = new p5.Oscillator('sine');
                 this.oscillator.freq(this.baseFreq);
                 this.oscillator.amp(0);
@@ -135,8 +134,8 @@
                 this.oscillator.disconnect();
                 this.oscillator.connect(globalReverb);
 
-                this.shouldPlaySound = random(1) < 0.15;  
-                this.soundDuration = random(5000, 15000);  
+                this.shouldPlaySound = random(1) < 0.10;  
+                this.soundDuration = random(5000, 10000);  
                 this.nextSoundTime = millis() + random(3000, 10000);  
             }
 
@@ -163,7 +162,7 @@
                     this.oscillator.start();
                     this.oscillator.amp(random(0.2, 0.4), 0.2); 
                     setTimeout(() => {
-                        this.oscillator.amp(0, 1);  
+                        this.oscillator.amp(0, 0.5);  
                         setTimeout(() => this.oscillator.stop(), 1000);  
                     }, this.soundDuration - 1000);
 
