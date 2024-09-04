@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fluid Particle System with Neon Light Effect</title>
+    <title>Fluid Particle System with Enhanced Sound and Light Effects</title>
     <style>
         body, html {
             margin: 0;
@@ -37,7 +37,7 @@
 
         // Sonido
         let whiteNoise, noiseFilter, lfo;
-        let schumannOscillator, reverb, distortion;
+        let schumannOscillator, randomOscillator, reverb, delay, distortion;
         let mouseNoise;
 
         // Puntos de luz de neón
@@ -65,9 +65,17 @@
             schumannOscillator.amp(0.05);  // Volumen bajo
             schumannOscillator.start();
 
+            // Oscilador de frecuencia aleatoria
+            randomOscillator = new p5.Oscillator('sine');
+            randomOscillator.freq(random(100, 8000));
+            randomOscillator.amp(0.0);
+            randomOscillator.start();
+
             // Reverberación profunda y distorsión
             reverb = new p5.Reverb();
             reverb.process(noiseFilter, 8, 5);  // Reverberación larga
+            delay = new p5.Delay();
+            delay.process(randomOscillator, 0.5, 0.7, 1000);  // Delay corto
             distortion = new p5.Distortion(0.4);  // Distorsión ligera
             distortion.process(noiseFilter);
             
@@ -207,6 +215,15 @@
         document.getElementById("startButton").addEventListener("click", () => {
             userStartAudio().then(() => {
                 whiteNoise.start();  // Iniciar el ruido blanco
+                randomOscillator.amp(0.2, 0.5);  // Fade in al azar
+                setInterval(() => {
+                    randomOscillator.freq(random(100, 8000));  // Frecuencia aleatoria
+                    randomOscillator.amp(0.2, 0.5);  // Fade in
+                    setTimeout(() => {
+                        randomOscillator.amp(0, 1);  // Fade out
+                    }, 5000);  // Cada 5 segundos
+                }, 10000);  // Ciclo de 10 segundos con 5 segundos de sonido y 5 de silencio
+
                 loop();  // Iniciar el ciclo de animación
                 document.getElementById("startButton").style.display = "none";  // Ocultar el botón
             }).catch((error) => {
