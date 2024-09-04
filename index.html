@@ -44,7 +44,7 @@
             lowPassFilter.freq(500); 
             noiseOscillator.disconnect();
             noiseOscillator.connect(lowPassFilter);
-            noiseOscillator.amp(0);  
+noiseOscillator.amp(0.3, 1);  // Aumentar el volumen del ruido verde
 
             lfo = new p5.Oscillator('sine');
             lfo.freq(random(1 / 7, 1 / 5)); 
@@ -162,8 +162,8 @@
                     this.oscillator.start();
                     this.oscillator.amp(random(0.2, 0.4), 0.2); 
                     setTimeout(() => {
-                        this.oscillator.amp(0, 0.5);  
-                        setTimeout(() => this.oscillator.stop(), 1000);  
+                      this.oscillator.amp(0.01, 0.2);  
+                   setTimeout(() => this.oscillator.stop(), 1000);  
                     }, this.soundDuration - 1000);
 
                     this.nextSoundTime = currentTime + random(3000, 10000);  
