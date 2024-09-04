@@ -27,7 +27,6 @@
         let audioStarted = false;
         let globalReverb, noiseOscillator, lfo;
 
-        // Variables para el punto negro que borra
         let erasePoint;
 
         function setup() {
@@ -36,27 +35,22 @@
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
 
-            // Configurar reverb global
             globalReverb = new p5.Reverb();
-            globalReverb.set(12, 8); // Reverberación amplia
+            globalReverb.set(12, 8); 
 
-            // Crear el ruido verde con un filtro de paso bajo
             noiseOscillator = new p5.Noise('pink');
             let lowPassFilter = new p5.LowPass();
-            lowPassFilter.freq(500); // Filtro de paso bajo para un ruido más "verde"
+            lowPassFilter.freq(500); 
             noiseOscillator.disconnect();
             noiseOscillator.connect(lowPassFilter);
-            noiseOscillator.amp(0);  // Comienza en silencio
-            noiseOscillator.start();
+            noiseOscillator.amp(0);  
 
-            // Configurar el LFO para modular la amplitud del ruido verde
             lfo = new p5.Oscillator('sine');
-            lfo.freq(random(1 / 7, 1 / 5));  // LFO con frecuencia aleatoria entre 5 y 7 segundos
-            lfo.disconnect();  // No necesita generar sonido directamente
-            lfo.amp(0.08);  // Amplitud del LFO (muy suave)
+            lfo.freq(random(1 / 7, 1 / 5)); 
+            lfo.disconnect();  
+            lfo.amp(0.08);  
             lfo.start();
 
-            // Crear partículas
             for (let i = 0; i < 500; i++) {
                 particles[i] = new Particle();
             }
@@ -67,7 +61,7 @@
         function draw() {
             if (!audioStarted) return;
 
-            background(0, 10); // Fondo semitransparente para un efecto de desvanecimiento suave
+            background(0, 10); 
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -83,14 +77,12 @@
                 yoff += inc;
             }
 
-            // Actualizar partículas
             for (let i = 0; i < particles.length; i++) {
                 particles[i].follow(flowfield);
                 particles[i].update();
                 particles[i].edges();
                 particles[i].show();
 
-                // Si la partícula está cerca del punto negro, la eliminamos temporalmente
                 if (erasePoint && dist(erasePoint.x, erasePoint.y, particles[i].pos.x, particles[i].pos.y) < 50) {
                     particles[i].pos = createVector(random(width), random(height)); // La "revivimos" en otra parte
                 }
@@ -114,7 +106,7 @@
             if (!audioStarted) {
                 userStartAudio();  // Iniciar el contexto de audio
                 audioStarted = true;
-                loop();  // Comenzar el bucle de draw
+                loop();  
             }
         }
 
@@ -123,7 +115,7 @@
         }
 
         function touchEnded() {
-            erasePoint = null; // Dejar de borrar
+            erasePoint = null; 
         }
 
         class Particle {
@@ -134,7 +126,6 @@
                 this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
 
-                // Crear oscilador con una frecuencia aleatoria y efectos
                 this.baseFreq = random(50, 3000);  // Ampliación del rango de frecuencia
                 this.oscillator = new p5.Oscillator('sine');
                 this.oscillator.freq(this.baseFreq);
@@ -170,29 +161,27 @@
                 let currentTime = millis();
                 if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
                     this.oscillator.start();
-                    this.oscillator.amp(random(0.2, 0.7), 0.5);  // Variación en la amplitud
+                    this.oscillator.amp(random(0.2, 0.4), 0.2); 
                     setTimeout(() => {
-                        this.oscillator.amp(0, 1);  // Fade out al final
-                        setTimeout(() => this.oscillator.stop(), 1000);  // Apagar el oscilador después del fade out
+                        this.oscillator.amp(0, 1);  
+                        setTimeout(() => this.oscillator.stop(), 1000);  
                     }, this.soundDuration - 1000);
 
-                    this.nextSoundTime = currentTime + random(3000, 10000);  // Recalcular el próximo tiempo para que suene
+                    this.nextSoundTime = currentTime + random(3000, 10000);  
                 }
             }
 
             show() {
-                stroke(255, 50);  // Blanco suave
+                stroke(255, 50);  
                 strokeWeight(1);
 
-                // Dibujar las líneas de las partículas
                 line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
                 this.prevPos = this.pos.copy();
 
-                // Dibujar un halo sutil alrededor de la partícula
                 noFill();
                 stroke(255, 20);
                 strokeWeight(3);
-                ellipse(this.pos.x, this.pos.y, 10);  // Halo muy sutil
+                ellipse(this.pos.x, this.pos.y, 10);  
             }
 
             edges() {
@@ -204,7 +193,7 @@
             }
         }
 
-        noLoop();  // Evitar que el draw se ejecute hasta que el usuario interactúe
+        noLoop();  
     </script>
 </body>
 </html>
