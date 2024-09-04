@@ -74,7 +74,7 @@
         }
 
         function draw() {
-            background(0, 8);  // Mantener un fondo oscuro, pero sin borrar los hilos
+            background(0, 10);  // Mantener un fondo oscuro, pero sin borrar los hilos
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -104,7 +104,7 @@
                 neonPoints[i].display();
                 neonPoints[i].reduceOpacity();
                 if (neonPoints[i].opacity <= 0) {
-                    neonPoints.splice(i, 2);  // Eliminar el punto de luz cuando se desvanezca
+                    neonPoints.splice(i, 1);  // Eliminar el punto de luz cuando se desvanezca
                 }
             }
         }
@@ -156,7 +156,7 @@
 
                 // Activar sonido en función del movimiento
                 if (this.shouldPlaySound && this.vel.mag() > 0.5) {
-                    this.oscillator.amp(0.1, 0.05);  // Fade in
+                    this.oscillator.amp(0.05, 0.05);  // Fade in
                     setTimeout(() => {
                         this.oscillator.amp(0, 0.1);  // Fade out
                     }, this.soundDuration);
@@ -186,7 +186,7 @@
                 this.opacity = 255;
                 this.size = 0;  // Tamaño del punto de luz
                 this.glowSize = 20;  // Tamaño del resplandor de neón
-                this.color = color(255, 255, 100, this.opacity);  // Luz blanca/amarilla
+                this.color = color(255, 255, 250, this.opacity);  // Luz blanca/amarilla
             }
 
             display() {
@@ -200,7 +200,7 @@
             }
 
             reduceOpacity() {
-                this.opacity -= 3;  // Reducir la opacidad lentamente
+                this.opacity -= 8;  // Reducir la opacidad lentamente
                 this.color.setAlpha(this.opacity);
             }
         }
