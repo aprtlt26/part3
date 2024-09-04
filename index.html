@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fluid Particle System with Smooth Motion and Ambient Sound</title>
+    <title>Fluid Particle System with Sound</title>
     <style>
         body, html {
             margin: 0;
@@ -101,25 +101,24 @@
             zoff += 0.001;
         }
 
-        function mousePressed() {
-            startAudio();
-        }
+        function startAudioAndAnimation() {
+            console.log('Button clicked, starting audio and animation...'); // Mensaje de depuración para confirmar clic
 
-        function startAudio() {
             if (!audioStarted) {
                 userStartAudio().then(() => {
+                    console.log('Audio started successfully'); // Confirmación en consola
                     audioStarted = true;
                     startTime = millis();
                     document.getElementById("startButton").style.display = "none";  // Ocultar el botón de inicio
+                    loop();  // Comenzar el bucle de animación
+                }).catch((e) => {
+                    console.error('Failed to start audio:', e);
                 });
             }
         }
 
-        // Controlar el botón para iniciar el audio y la animación
-        document.getElementById("startButton").addEventListener("click", () => {
-            startAudio();
-            loop();  // Iniciar el ciclo de animación
-        });
+        // Asignar evento al botón para iniciar el audio y la animación
+        document.getElementById("startButton").addEventListener("click", startAudioAndAnimation);
 
         class Particle {
             constructor() {
@@ -203,6 +202,7 @@
     </script>
 </body>
 </html>
+
 
 
 
