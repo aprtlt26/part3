@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fluid Particle System</title>
+    <title>Fluid Particle System with Camera Control</title>
     <style>
         body, html {
             margin: 0;
@@ -15,13 +15,23 @@
 </head>
 <body>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ml5/0.6.0/ml5.min.js"></script>
     <script>
+        let inc = 0.1;
+        let scl = 10;
+        let cols, rows;
+        let zoff = 0;
         let particles = [];
         let flowfield;
-        let cols, rows;
-        let scl = 20; // Aumentar escala para reducir la carga en dispositivos móviles
-        let inc = 0.1;
-        let zoff = 0;
+        let maxSpeed = 2;
+        let audioStarted = false;
+
+        let globalReverb;
+
+        let video;
+        let poseNet;
+        let poses = [];
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
@@ -29,15 +39,37 @@
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
 
-            // Crear menos partículas para mejorar el rendimiento
-            for (let i = 0; i < 150; i++) {
+            // Configurar reverb global con mayor amplitud
+            globalReverb = new p5.Reverb();
+            globalReverb.set(12, 6); // Reverb más larga y envolvente
+
+            for (let i = 0; i < 500; i++) {
                 particles[i] = new Particle();
             }
 
             background(0);
+
+            // Configurar la cámara
+            video = createCapture(VIDEO);
+            video.size(width, height);
+            video.hide();
+
+            // Configurar PoseNet para detección de poses
+            poseNet = ml5.poseNet(video, modelReady);
+            poseNet.on('pose', gotPoses);
+        }
+
+        function modelReady() {
+            console.log('PoseNet ready');
+        }
+
+        function gotPoses(results) {
+            poses = results;
         }
 
         function draw() {
+            if (!audioStarted) return;
+
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
                 let xoff = 0;
@@ -45,7 +77,8 @@
                     let index = x + y * cols;
                     let angle = noise(xoff, yoff, zoff) * TWO_PI;
                     let v = p5.Vector.fromAngle(angle);
-                    v.setMag(0.3); // Menor magnitud para un efecto más suave
+                    v.y += 1;
+                    v.setMag(0.5);
                     flowfield[index] = v;
                     xoff += inc;
                 }
@@ -58,17 +91,55 @@
                 particles[i].edges();
                 particles[i].show();
             }
+            zoff += 0.003;
 
-            zoff += 0.01; // Incremento más rápido para asegurar el movimiento
+            // Si hay poses detectadas, usar la posición de la mano para controlar los gráficos
+            if (poses.length > 0) {
+                let pose = poses[0].pose;
+                let rightWrist = pose.keypoints.find(point => point.part === "rightWrist");
+                if (rightWrist && rightWrist.score > 0.5) {
+                    modulateInteraction(rightWrist.position.x, rightWrist.position.y);
+                }
+            }
+        }
+
+        function mousePressed() {
+            if (!audioStarted) {
+                userStartAudio();  // Iniciar el contexto de audio
+                audioStarted = true;
+                loop();  // Comenzar el bucle de draw
+            }
+        }
+
+        function modulateInteraction(x, y) {
+            // Estira las partículas hacia la posición de la mano (o mouse/touch)
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].stretchTowards(x, y);
+            }
         }
 
         class Particle {
             constructor() {
-                this.pos = createVector(random(width), random(height));
+                this.origin = createVector(random(width), random(height));  // Posición de origen
+                this.pos = this.origin.copy();  // Posición actual, comienza en el origen
                 this.vel = createVector(0, 0);
                 this.acc = createVector(0, 0);
-                this.maxSpeed = 2;
+                this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
+
+                // Crear un oscilador con una frecuencia aleatoria
+                this.baseFreq = random(100, 2200); // Frecuencia base que será modulada
+                this.oscillator = new p5.Oscillator('sine');
+                this.oscillator.freq(this.baseFreq);
+                this.oscillator.amp(0);  // Comienza en silencio
+
+                // Conectar oscilador a la reverb global
+                this.oscillator.disconnect();
+                this.oscillator.connect(globalReverb);
+
+                this.shouldPlaySound = random(1) < 0.2;  // 20% de probabilidad de que tenga sonido activo
+                this.soundDuration = 10000;  // Duración del sonido en milisegundos
+                this.nextSoundTime = millis() + random(3000, 8000);  // Tiempo hasta que suene nuevamente
             }
 
             follow(vectors) {
@@ -85,14 +156,40 @@
 
             update() {
                 this.vel.add(this.acc);
-                this.vel.limit(this.maxSpeed);
+                this.vel.limit(this.maxSpeed);  // Utiliza maxSpeed modulado
                 this.pos.add(this.vel);
                 this.acc.mult(0);
+
+                // Controlar el sonido en función del tiempo
+                let currentTime = millis();
+                if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
+                    this.oscillator.start();
+                    this.oscillator.amp(0.5, 0.5); // Fade in al inicio
+                    setTimeout(() => {
+                        this.oscillator.amp(0, 1); // Fade out al final
+                        setTimeout(() => this.oscillator.stop(), 1000); // Apagar el oscilador después del fade out
+                    }, this.soundDuration - 1000);
+
+                    // Configurar el próximo tiempo para que suene
+                    this.nextSoundTime = currentTime + random(3000, 8000);
+                }
+
+                // Hacer que la partícula vuelva lentamente a su posición de origen
+                let originForce = p5.Vector.sub(this.origin, this.pos);
+                originForce.mult(0.01);  // Controla la velocidad de retorno
+                this.applyForce(originForce);
+            }
+
+            stretchTowards(x, y) {
+                // Estirar la partícula hacia el punto (x, y)
+                let stretchForce = createVector(x - this.pos.x, y - this.pos.y);
+                stretchForce.setMag(0.5);  // Controla la intensidad del estiramiento
+                this.applyForce(stretchForce);
             }
 
             show() {
-                stroke(255, 150); // Color blanco con algo de transparencia
-                strokeWeight(2); // Un poco más grueso para ser más visible en móviles
+                stroke(255, 100);
+                strokeWeight(1);
                 line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
                 this.prevPos = this.pos.copy();
             }
@@ -106,12 +203,9 @@
             }
         }
 
-        // Ajuste el tamaño del canvas cuando se cambia el tamaño de la ventana
-        function windowResized() {
-            resizeCanvas(windowWidth, windowHeight);
-            background(0); // Redibujar el fondo después de cambiar el tamaño
-        }
+        noLoop();  // Evitar que el draw se ejecute hasta que el usuario interactúe
     </script>
 </body>
 </html>
+
 
