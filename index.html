@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fluid Particle System with Sound</title>
+    <title>Fluid Particle System with Mouse Interaction</title>
     <style>
         body, html {
             margin: 0;
@@ -40,6 +40,9 @@
         let delays = [];
         let compressor;
 
+        // Figuras del mouse
+        let mouseShapes = [];
+
         function setup() {
             createCanvas(windowWidth, windowHeight);
             cols = floor(width / scl);
@@ -71,6 +74,8 @@
         }
 
         function draw() {
+            background(0, 25);  // Fondo con baja opacidad para efecto de rastro
+
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
                 let xoff = 0;
@@ -86,11 +91,21 @@
             }
             zoff += 0.01;
 
+            // Actualizar y mostrar partículas
             for (let i = 0; i < particles.length; i++) {
                 particles[i].follow(flowfield);
                 particles[i].update();
                 particles[i].edges();
                 particles[i].show();
+            }
+
+            // Mostrar figuras luminosas del mouse
+            for (let i = mouseShapes.length - 1; i >= 0; i--) {
+                mouseShapes[i].display();
+                mouseShapes[i].reduceOpacity();
+                if (mouseShapes[i].opacity <= 0) {
+                    mouseShapes.splice(i, 1);  // Eliminar la figura cuando desaparezca
+                }
             }
         }
 
@@ -164,6 +179,33 @@
             }
         }
 
+        class MouseShape {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = random(20, 50);  // Tamaño aleatorio de la figura
+                this.opacity = 255;  // Inicia con opacidad completa
+                this.color = color(random(100, 255), random(100, 255), random(200, 255), this.opacity);  // Colores tipo neón
+            }
+
+            display() {
+                noStroke();
+                fill(this.color);
+                ellipse(this.x, this.y, this.size);
+            }
+
+            reduceOpacity() {
+                this.opacity -= 5;  // Reducir la opacidad lentamente
+                this.color.setAlpha(this.opacity);  // Actualizar el valor alfa
+            }
+        }
+
+        // Agregar figuras del mouse
+        function mouseMoved() {
+            let shape = new MouseShape(mouseX, mouseY);
+            mouseShapes.push(shape);
+        }
+
         document.getElementById("startButton").addEventListener("click", () => {
             userStartAudio().then(() => {
                 loop();  // Iniciar el ciclo de animación
@@ -179,9 +221,6 @@
     </script>
 </body>
 </html>
-
-
-
 
 
 
