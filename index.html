@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fluid Particle System with Mouse Interaction</title>
+    <title>Fluid Particle System with Light Interaction</title>
     <style>
         body, html {
             margin: 0;
@@ -40,8 +40,8 @@
         let delays = [];
         let compressor;
 
-        // Figuras del mouse
-        let mouseShapes = [];
+        // Rastro del haz de luz del mouse
+        let mouseTrails = [];
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
@@ -74,7 +74,7 @@
         }
 
         function draw() {
-            background(0, 25);  // Fondo con baja opacidad para efecto de rastro
+            background(0, 25);  // Fondo con baja opacidad para dejar un rastro sutil
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -99,12 +99,12 @@
                 particles[i].show();
             }
 
-            // Mostrar figuras luminosas del mouse
-            for (let i = mouseShapes.length - 1; i >= 0; i--) {
-                mouseShapes[i].display();
-                mouseShapes[i].reduceOpacity();
-                if (mouseShapes[i].opacity <= 0) {
-                    mouseShapes.splice(i, 1);  // Eliminar la figura cuando desaparezca
+            // Mostrar y actualizar el haz de luz del mouse
+            for (let i = mouseTrails.length - 1; i >= 0; i--) {
+                mouseTrails[i].display();
+                mouseTrails[i].reduceOpacity();
+                if (mouseTrails[i].opacity <= 0) {
+                    mouseTrails.splice(i, 1);  // Eliminar rastro cuando se desvanezca
                 }
             }
         }
@@ -165,7 +165,7 @@
 
             show() {
                 stroke(255, 150);
-                strokeWeight(1);
+                strokeWeight(0.5);  // Mantener las líneas delgadas
                 line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
                 this.prevPos = this.pos.copy();
             }
@@ -179,31 +179,31 @@
             }
         }
 
-        class MouseShape {
+        class MouseTrail {
             constructor(x, y) {
                 this.x = x;
                 this.y = y;
-                this.size = random(20, 50);  // Tamaño aleatorio de la figura
-                this.opacity = 255;  // Inicia con opacidad completa
-                this.color = color(random(100, 255), random(100, 255), random(200, 255), this.opacity);  // Colores tipo neón
+                this.length = random(100, 200);  // Longitud aleatoria del haz de luz
+                this.opacity = 255;
+                this.color = color(255, 255, 200, this.opacity);  // Luz blanca/amarilla
             }
 
             display() {
-                noStroke();
-                fill(this.color);
-                ellipse(this.x, this.y, this.size);
+                stroke(this.color);
+                strokeWeight(4);  // Ancho del haz de luz
+                line(this.x, this.y, this.x + this.length, this.y);  // Línea que simula el haz
             }
 
             reduceOpacity() {
-                this.opacity -= 5;  // Reducir la opacidad lentamente
-                this.color.setAlpha(this.opacity);  // Actualizar el valor alfa
+                this.opacity -= 10;  // Reducir opacidad lentamente
+                this.color.setAlpha(this.opacity);
             }
         }
 
-        // Agregar figuras del mouse
+        // Agregar haz de luz al mover el mouse
         function mouseMoved() {
-            let shape = new MouseShape(mouseX, mouseY);
-            mouseShapes.push(shape);
+            let trail = new MouseTrail(mouseX, mouseY);
+            mouseTrails.push(trail);
         }
 
         document.getElementById("startButton").addEventListener("click", () => {
