@@ -51,18 +51,18 @@
 
             // Configurar reverb y delays
             globalReverb = new p5.Reverb();
-            globalReverb.set(12, 6);  // Reverb larga y envolvente
+            globalReverb.set(15, 8);  // Reverb larga
 
             for (let i = 0; i < 4; i++) {
                 let delay = new p5.Delay();
-                delay.delayTime(0.05 + i * 0.01);  // Retrasos cortos y distintos
+                delay.delayTime(0.03 + i * 0.01);  // Retrasos cortos y distintos
                 delays.push(delay);
             }
 
             compressor = new p5.Compressor();
             compressor.attack(0.01);
-            compressor.release(0.5);
-            compressor.ratio(8);
+            compressor.release(0.8);
+            compressor.ratio(6);
             compressor.threshold(-24);
 
             // Crear partículas
@@ -118,23 +118,22 @@
                 this.prevPos = this.pos.copy();
 
                 // Crear oscilador para sonido
-                this.baseFreq = random(50, 3000);  // Frecuencia aleatoria de 50 a 3000 Hz
                 this.oscillator = new p5.Oscillator('sine');
-                this.oscillator.freq(this.baseFreq);
+                this.oscillator.freq(random(200, 8000));  // Frecuencia aleatoria
                 this.oscillator.amp(0);
+                this.oscillator.start();
 
                 this.oscillator.disconnect();
                 this.oscillator.connect(globalReverb);
 
                 // Conectar a los delays
                 for (let delay of delays) {
-                    delay.process(this.oscillator, delay.delayTime(), 0.4, 200);  // Procesar con feedback corto
+                    delay.process(this.oscillator, 0.1, 0.4, 100);
                 }
                 compressor.process(this.oscillator);
 
-                this.shouldPlaySound = random(1) < 0.15;  // Probabilidad de que cada partícula tenga sonido (15%)
-                this.soundDuration = random(5000, 15000);  // Duración del sonido aleatoria entre 5 y 15 segundos
-                this.nextSoundTime = millis() + random(3000, 10000);  // Tiempo hasta que suene nuevamente
+                this.shouldPlaySound = random(1) < 0.2;  // Probabilidad de que cada partícula tenga sonido
+                this.soundDuration = random(300, 1000);  // Duración del sonido
             }
 
             follow(vectors) {
@@ -155,16 +154,12 @@
                 this.pos.add(this.vel);
                 this.acc.mult(0);
 
-                let currentTime = millis();
-                if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
-                    this.oscillator.start();
-                    this.oscillator.amp(random(0.2, 0.7), 0.5);  // Fade in suave
+                // Activar sonido en función del movimiento
+                if (this.shouldPlaySound && this.vel.mag() > 0.5) {
+                    this.oscillator.amp(0.05, 0.05);  // Fade in
                     setTimeout(() => {
-                        this.oscillator.amp(0, 1);  // Fade out al final
-                        setTimeout(() => this.oscillator.stop(), 1000);  // Apagar el oscilador después del fade out
-                    }, this.soundDuration - 1000);
-
-                    this.nextSoundTime = currentTime + random(3000, 10000);  // Recalcular el próximo tiempo para que suene
+                        this.oscillator.amp(0, 0.1);  // Fade out
+                    }, this.soundDuration);
                 }
             }
 
@@ -189,15 +184,15 @@
                 this.x = x;
                 this.y = y;
                 this.opacity = 255;
-                this.size = 20;  // Tamaño del punto de luz
-                this.glowSize = 40;  // Tamaño del resplandor de neón
-                this.color = color(255, 255, 150, this.opacity);  // Luz blanca/amarilla
+                this.size = 0;  // Tamaño del punto de luz
+                this.glowSize = 20;  // Tamaño del resplandor de neón
+                this.color = color(255, 255, 250, this.opacity);  // Luz blanca/amarilla
             }
 
             display() {
                 noStroke();
                 // Dibujar el resplandor del neón
-                fill(255, 255, 150, this.opacity * 0.4);  // Luz difusa alrededor
+                fill(255, 255, 100, this.opacity * 0.2);  // Luz difusa alrededor
                 ellipse(this.x, this.y, this.glowSize);
                 // Dibujar el punto central
                 fill(this.color);
@@ -205,7 +200,7 @@
             }
 
             reduceOpacity() {
-                this.opacity -= 5;  // Reducir la opacidad lentamente
+                this.opacity -= 8;  // Reducir la opacidad lentamente
                 this.color.setAlpha(this.opacity);
             }
         }
@@ -218,7 +213,233 @@
 
         document.getElementById("startButton").addEventListener("click", () => {
             userStartAudio().then(() => {
-                audioStarted = true;
+                loop();  // Iniciar el ciclo de animación
+                document.getElementById("startButton").style.display = "none";  // Ocultar el botón
+            }).catch((error) => {
+                console.error('Error al iniciar el audio:', error);
+            });
+        });
+
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+        }
+    </script>
+</body>
+</html> pero no arranca no inicia.. porfavir ponle lalogica de audio que te pedí y haz que funciones <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fluid Particle System with Neon Light Effect</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: black;
+        }
+        #startButton {
+            position: absolute;
+            z-index: 10;
+            padding: 20px;
+            background-color: white;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <button id="startButton">Start</button>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
+    <script>
+        let particles = [];
+        let cols, rows;
+        let flowfield;
+        let scl = 20;
+        let inc = 0.1;
+        let zoff = 0;
+        let audioStarted = false;
+
+        // Efectos de sonido
+        let globalReverb;
+        let delays = [];
+        let compressor;
+
+        // Puntos de luz de neón
+        let neonPoints = [];
+
+        function setup() {
+            createCanvas(windowWidth, windowHeight);
+            cols = floor(width / scl);
+            rows = floor(height / scl);
+            flowfield = new Array(cols * rows);
+
+            // Configurar reverb y delays
+            globalReverb = new p5.Reverb();
+            globalReverb.set(15, 8);  // Reverb larga
+
+            for (let i = 0; i < 4; i++) {
+                let delay = new p5.Delay();
+                delay.delayTime(0.03 + i * 0.01);  // Retrasos cortos y distintos
+                delays.push(delay);
+            }
+
+            compressor = new p5.Compressor();
+            compressor.attack(0.01);
+            compressor.release(0.8);
+            compressor.ratio(6);
+            compressor.threshold(-24);
+
+            // Crear partículas
+            for (let i = 0; i < 600; i++) {
+                particles[i] = new Particle();
+            }
+            background(0);
+            noLoop();  // Evitar que draw corra hasta que se presione el botón
+        }
+
+        function draw() {
+            background(0, 10);  // Mantener un fondo oscuro, pero sin borrar los hilos
+
+            let yoff = 0;
+            for (let y = 0; y < rows; y++) {
+                let xoff = 0;
+                for (let x = 0; x < cols; x++) {
+                    let index = x + y * cols;
+                    let angle = noise(xoff, yoff, zoff) * TWO_PI;
+                    let v = p5.Vector.fromAngle(angle);
+                    v.setMag(1);
+                    flowfield[index] = v;
+                    xoff += inc;
+                }
+                yoff += inc;
+            }
+            zoff += 0.01;
+
+            // Actualizar y mostrar partículas
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].follow(flowfield);
+                particles[i].update();
+                particles[i].edges();
+                particles[i].show();
+            }
+
+            // Mostrar el punto de luz de neón del mouse
+            for (let i = neonPoints.length - 1; i >= 0; i--) {
+                neonPoints[i].display();
+                neonPoints[i].reduceOpacity();
+                if (neonPoints[i].opacity <= 0) {
+                    neonPoints.splice(i, 1);  // Eliminar el punto de luz cuando se desvanezca
+                }
+            }
+        }
+
+        class Particle {
+            constructor() {
+                this.pos = createVector(random(width), random(height));
+                this.vel = createVector(0, 0);
+                this.acc = createVector(0, 0);
+                this.maxSpeed = 2;
+                this.prevPos = this.pos.copy();
+
+                // Crear oscilador para sonido
+                this.oscillator = new p5.Oscillator('sine');
+                this.oscillator.freq(random(200, 8000));  // Frecuencia aleatoria
+                this.oscillator.amp(0);
+                this.oscillator.start();
+
+                this.oscillator.disconnect();
+                this.oscillator.connect(globalReverb);
+
+                // Conectar a los delays
+                for (let delay of delays) {
+                    delay.process(this.oscillator, 0.1, 0.4, 100);
+                }
+                compressor.process(this.oscillator);
+
+                this.shouldPlaySound = random(1) < 0.2;  // Probabilidad de que cada partícula tenga sonido
+                this.soundDuration = random(300, 1000);  // Duración del sonido
+            }
+
+            follow(vectors) {
+                let x = floor(this.pos.x / scl);
+                let y = floor(this.pos.y / scl);
+                let index = x + y * cols;
+                let force = vectors[index];
+                this.applyForce(force);
+            }
+
+            applyForce(force) {
+                this.acc.add(force);
+            }
+
+            update() {
+                this.vel.add(this.acc);
+                this.vel.limit(this.maxSpeed);
+                this.pos.add(this.vel);
+                this.acc.mult(0);
+
+                // Activar sonido en función del movimiento
+                if (this.shouldPlaySound && this.vel.mag() > 0.5) {
+                    this.oscillator.amp(0.05, 0.05);  // Fade in
+                    setTimeout(() => {
+                        this.oscillator.amp(0, 0.1);  // Fade out
+                    }, this.soundDuration);
+                }
+            }
+
+            show() {
+                stroke(255, 200);
+                strokeWeight(0.5);  // Mantener las líneas delgadas, como hilos
+                line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
+                this.prevPos = this.pos.copy();  // Actualizar la posición anterior
+            }
+
+            edges() {
+                if (this.pos.x > width) this.pos.x = 0;
+                if (this.pos.x < 0) this.pos.x = width;
+                if (this.pos.y > height) this.pos.y = 0;
+                if (this.pos.y < 0) this.pos.y = height;
+                this.prevPos = this.pos.copy();
+            }
+        }
+
+        class NeonPoint {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.opacity = 255;
+                this.size = 0;  // Tamaño del punto de luz
+                this.glowSize = 20;  // Tamaño del resplandor de neón
+                this.color = color(255, 255, 250, this.opacity);  // Luz blanca/amarilla
+            }
+
+            display() {
+                noStroke();
+                // Dibujar el resplandor del neón
+                fill(255, 255, 100, this.opacity * 0.2);  // Luz difusa alrededor
+                ellipse(this.x, this.y, this.glowSize);
+                // Dibujar el punto central
+                fill(this.color);
+                ellipse(this.x, this.y, this.size);
+            }
+
+            reduceOpacity() {
+                this.opacity -= 8;  // Reducir la opacidad lentamente
+                this.color.setAlpha(this.opacity);
+            }
+        }
+
+        // Agregar punto de luz al mover el mouse
+        function mouseMoved() {
+            let neonPoint = new NeonPoint(mouseX, mouseY);
+            neonPoints.push(neonPoint);
+        }
+
+        document.getElementById("startButton").addEventListener("click", () => {
+            userStartAudio().then(() => {
                 loop();  // Iniciar el ciclo de animación
                 document.getElementById("startButton").style.display = "none";  // Ocultar el botón
             }).catch((error) => {
@@ -232,7 +453,6 @@
     </script>
 </body>
 </html>
-
 
 
 
