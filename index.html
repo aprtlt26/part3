@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fluid Particle System with Smooth Motion</title>
+    <title>Fluid Particle System with Smooth Motion and Ambient Sound</title>
     <style>
         body, html {
             margin: 0;
@@ -18,7 +18,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
     <script>
-        let inc = 0.015;  // Incremento para movimiento suave
+        let inc = 0.015;  // Incremento pequeño para movimiento suave
         let scl = 15;
         let cols, rows;
         let zoff = 0;
@@ -29,8 +29,9 @@
         let startTime;
         let audioStarted = false;
 
+        // Sonido
         let globalReverb;
-        let delay;
+        let delays = [];
         let compressor;
 
         function setup() {
@@ -43,14 +44,21 @@
 
             // Configurar efectos de sonido
             globalReverb = new p5.Reverb();
-            globalReverb.set(12, 8);  // Reverb profunda
+            globalReverb.set(15, 10);  // Reverb larga y envolvente
 
-            delay = new p5.Delay();
+            // Configurar múltiples delays
+            for (let i = 0; i < 4; i++) {
+                let delay = new p5.Delay();
+                delay.delayTime(0.05 + i * 0.01);  // Cortos retrasos con diferencias
+                delays.push(delay);
+            }
+
+            // Configurar compresor
             compressor = new p5.Compressor();
             compressor.attack(0.01);
-            compressor.release(0.5);
-            compressor.ratio(10);
-            compressor.threshold(-24);
+            compressor.release(0.3);
+            compressor.ratio(8);
+            compressor.threshold(-18);
 
             // Crear partículas
             for (let i = 0; i < 300; i++) {
@@ -96,7 +104,6 @@
         }
 
         function mousePressed() {
-            // Este evento será manejado cuando el usuario haga clic en cualquier parte de la pantalla
             startAudio();
         }
 
@@ -124,13 +131,18 @@
 
                 // Crear un oscilador con una frecuencia aleatoria
                 this.oscillator = new p5.Oscillator('sine');
-                this.oscillator.freq(random(200, 2200));
+                this.oscillator.freq(random(60, 8000));  // Frecuencia aleatoria
                 this.oscillator.amp(0.0);
                 this.oscillator.start();
 
                 this.oscillator.disconnect();
                 this.oscillator.connect(globalReverb);
-                delay.process(this.oscillator, 0.2, 0.5, 1000);  // Delay corto
+
+                // Conectar el oscilador a múltiples delays
+                for (let delay of delays) {
+                    delay.process(this.oscillator, delay.delayTime(), 0.4, 200);  // Procesar con feedback corto
+                }
+
                 compressor.process(this.oscillator);
 
                 this.shouldPlaySound = random(1) < 0.2;  // 20% de probabilidad de sonido activo
@@ -158,13 +170,14 @@
 
                 // Activar sonido dinámico en función del movimiento
                 if (this.shouldPlaySound && this.vel.mag() > 0.1) {
-                    this.oscillator.amp(0.4, 0.1);  // Fade in suave
-                    this.oscillator.freq(map(this.pos.x, 0, width, 200, 2200));  // Modula la frecuencia con la posición
+                    let frequency = random(60, 8000);  // Frecuencia aleatoria en cada activación
+                    this.oscillator.freq(frequency);
+                    this.oscillator.amp(0.2, 0.05);  // Amplitud sutil, fade in rápido
 
-                    globalReverb.amp(map(this.vel.mag(), 0, maxSpeed, 0.2, 0.7));  // Dinamismo en la reverb
-                    delay.feedback(map(this.vel.mag(), 0, maxSpeed, 0.3, 0.6));
-                } else {
-                    this.oscillator.amp(0, 0.1);  // Fade out cuando la partícula se desacelera
+                    // Apagar el sonido rápidamente para evitar saturación
+                    setTimeout(() => {
+                        this.oscillator.amp(0, 0.05);  // Fade out rápido
+                    }, random(200, 400));  // Apagar en milisegundos
                 }
             }
 
@@ -190,6 +203,7 @@
     </script>
 </body>
 </html>
+
 
 
 
