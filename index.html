@@ -44,12 +44,14 @@
             lowPassFilter.freq(500); 
             noiseOscillator.disconnect();
             noiseOscillator.connect(lowPassFilter);
-noiseOscillator.amp(0.3, 1);  // Aumentar el volumen del ruido verde
+
+            // Aumentar la amplitud base del ruido verde
+            noiseOscillator.amp(0.5, 1);  // Aumentar la amplitud inicial del ruido verde
 
             lfo = new p5.Oscillator('sine');
             lfo.freq(random(1 / 7, 1 / 5)); 
             lfo.disconnect();  
-            lfo.amp(2);  // Aumentar la amplitud del LFO para hacer el ruido verde más notable
+            lfo.amp(0.8);  // Aumentar la amplitud del LFO para hacer el ruido verde mucho más notable
             lfo.start();
 
             for (let i = 0; i < 500; i++) {
@@ -92,8 +94,8 @@ noiseOscillator.amp(0.3, 1);  // Aumentar el volumen del ruido verde
             zoff += 0.003;
 
             // Ajustar la amplitud del ruido verde con LFO más notable
-            let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.1, 0.5);  // Aumentar el rango de amplitud
-            noiseOscillator.amp(noiseAmplitude, 1); 
+            let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.3, 0.7);  // Aumentar el rango de amplitud para un mayor impacto
+            noiseOscillator.amp(noiseAmplitude, 0.6);  // Aplicar la amplitud al ruido verde
 
             if (erasePoint) {
                 fill(0);
@@ -126,7 +128,7 @@ noiseOscillator.amp(0.3, 1);  // Aumentar el volumen del ruido verde
                 this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
 
-                this.baseFreq = random(100, 5000);  
+                this.baseFreq = random(100, 7000);  
                 this.oscillator = new p5.Oscillator('sine');
                 this.oscillator.freq(this.baseFreq);
                 this.oscillator.amp(0);
@@ -160,10 +162,10 @@ noiseOscillator.amp(0.3, 1);  // Aumentar el volumen del ruido verde
                 let currentTime = millis();
                 if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
                     this.oscillator.start();
-                    this.oscillator.amp(random(0.2, 0.4), 0.2); 
+                    this.oscillator.amp(random(0.01, 0.02), 0.2);  // Reducir el volumen de los osciladores aún más
                     setTimeout(() => {
-                      this.oscillator.amp(0.01, 0.2);  
-                   setTimeout(() => this.oscillator.stop(), 1000);  
+                        this.oscillator.amp(0.01, 0.2);  
+                        setTimeout(() => this.oscillator.stop(), 1000);  
                     }, this.soundDuration - 1000);
 
                     this.nextSoundTime = currentTime + random(3000, 10000);  
@@ -196,7 +198,6 @@ noiseOscillator.amp(0.3, 1);  // Aumentar el volumen del ruido verde
     </script>
 </body>
 </html>
-
 
 
 
