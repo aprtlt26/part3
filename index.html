@@ -23,7 +23,7 @@
         let zoff = 0;
         let particles = [];
         let flowfield;
-        let maxSpeed = 2;
+        let maxSpeed = 1;
         let audioStarted = false;
 
         // Reverberación global
@@ -92,7 +92,7 @@
 
                 // Crear un oscilador con una frecuencia aleatoria
                 this.oscillator = new p5.Oscillator('sine');
-                this.oscillator.freq(random(100, 2200));
+                this.oscillator.freq(random(200, 7000));
                 this.oscillator.amp(0);  // Comienza en silencio
                 this.oscillator.start();
 
@@ -123,7 +123,7 @@
                 this.acc.mult(0);
 
                 if (this.shouldPlaySound && this.vel.mag() > 0.1) {
-                    this.oscillator.amp(0.02, 0.5);  // Fade in suave y bajo volumen
+                    this.oscillator.amp(0.03, 0.5);  // Fade in suave y bajo volumen
                     setTimeout(() => {
                         this.oscillator.amp(0, 1);  // Fade out
                     }, 5000);
