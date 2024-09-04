@@ -25,7 +25,7 @@
         let flowfield;
         let maxSpeed = 0.3;
         let audioStarted = false;
-        let globalReverb, globalCompressor;
+        let globalReverb;
 
         // Variables para el punto negro que borra
         let erasePoint;
@@ -36,15 +36,9 @@
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
 
-            // Configurar reverb y compresión general
+            // Configurar reverb global
             globalReverb = new p5.Reverb();
             globalReverb.set(12, 8); // Reverberación amplia
-
-            globalCompressor = new p5.Compressor();
-            globalCompressor.attack(0.01);
-            globalCompressor.release(0.5);
-            globalCompressor.threshold(-12);
-            globalCompressor.ratio(6);
 
             // Crear partículas
             for (let i = 0; i < 500; i++) {
@@ -121,24 +115,18 @@
                 this.prevPos = this.pos.copy();
 
                 // Crear oscilador con una frecuencia aleatoria y efectos
+                this.baseFreq = random(50, 3000);  // Ampliación del rango de frecuencia
                 this.oscillator = new p5.Oscillator('sine');
-                this.oscillator.freq(random(600, 7000)); // Frecuencias entre 200 y 700 Hz
-                this.oscillator.amp(0);  // Comienza en silencio
+                this.oscillator.freq(this.baseFreq);
+                this.oscillator.amp(0);
 
-                let oscDelay = new p5.Delay();
-                oscDelay.process(this.oscillator, 0.1, 0.5, 500); // Delay corto
-                oscDelay.feedback(0.5);
-                this.oscillator.start();
-
-                // Conectar el oscilador a la reverb y compresor global
+                // Conectar oscilador a la reverb global
                 this.oscillator.disconnect();
                 this.oscillator.connect(globalReverb);
-                globalCompressor.process(this.oscillator);
 
-                // Controlar cuándo debe sonar
-                this.shouldPlaySound = random(1) < 0.1;  // 10% de probabilidad de sonido activo
-                this.soundDuration = 10000;  // Duración del sonido: 10 segundos
-                this.nextSoundTime = millis() + random(3000, 15000);  // Tiempo para el próximo sonido
+                this.shouldPlaySound = random(1) < 0.15;  // Sonido ocasional
+                this.soundDuration = random(5000, 15000);  // Duración variable del sonido
+                this.nextSoundTime = millis() + random(3000, 10000);  // Tiempo hasta que suene nuevamente
             }
 
             follow(vectors) {
@@ -161,12 +149,14 @@
 
                 let currentTime = millis();
                 if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
-                    this.oscillator.amp(0.05, 0.5);  // Fade in
+                    this.oscillator.start();
+                    this.oscillator.amp(random(0.2, 0.7), 0.5);  // Variación en la amplitud
                     setTimeout(() => {
-                        this.oscillator.amp(0, 1);  // Fade out
-                    }, this.soundDuration);
+                        this.oscillator.amp(0, 1);  // Fade out al final
+                        setTimeout(() => this.oscillator.stop(), 1000);  // Apagar el oscilador después del fade out
+                    }, this.soundDuration - 1000);
 
-                    this.nextSoundTime = currentTime + random(3000, 15000);  // Establecer el próximo tiempo para que suene
+                    this.nextSoundTime = currentTime + random(3000, 10000);  // Recalcular el próximo tiempo para que suene
                 }
             }
 
@@ -198,6 +188,7 @@
     </script>
 </body>
 </html>
+
 
 
 
