@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fluid Particle System with Sound</title>
+    <title>Fluid Particle System</title>
     <style>
         body, html {
             margin: 0;
@@ -11,72 +11,44 @@
             overflow: hidden;
             background: black;
         }
+        #startButton {
+            position: absolute;
+            z-index: 10;
+            padding: 20px;
+            background-color: white;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
-    <button id="startButton" style="position: absolute; z-index: 10; padding: 20px; background-color: white; border: none; font-size: 20px; cursor: pointer;">Start</button>
+    <button id="startButton">Start</button>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
     <script>
-        let inc = 0.015;  // Incremento pequeño para movimiento suave
-        let scl = 15;
-        let cols, rows;
-        let zoff = 0;
         let particles = [];
+        let cols, rows;
         let flowfield;
-        let maxSpeed = 0.8;
-        let speedUp = false;
-        let startTime;
+        let scl = 20;
+        let inc = 0.1;
+        let zoff = 0;
         let audioStarted = false;
-
-        // Sonido
-        let globalReverb;
-        let delays = [];
-        let compressor;
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
-            frameRate(60);  // Tasa de fotogramas constante
-
             cols = floor(width / scl);
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
-
-            // Configurar efectos de sonido
-            globalReverb = new p5.Reverb();
-            globalReverb.set(15, 10);  // Reverb larga y envolvente
-
-            // Configurar múltiples delays
-            for (let i = 0; i < 4; i++) {
-                let delay = new p5.Delay();
-                delay.delayTime(0.05 + i * 0.01);  // Cortos retrasos con diferencias
-                delays.push(delay);
-            }
-
-            // Configurar compresor
-            compressor = new p5.Compressor();
-            compressor.attack(0.01);
-            compressor.release(0.3);
-            compressor.ratio(8);
-            compressor.threshold(-18);
 
             // Crear partículas
             for (let i = 0; i < 300; i++) {
                 particles[i] = new Particle();
             }
-
             background(0);
+            noLoop();  // Evitar que draw corra hasta que se presione el botón
         }
 
         function draw() {
-            let currentTime = millis();
-
-            // Acelerar las partículas después de 20 segundos
-            if (currentTime - startTime > 20000 && !speedUp) {
-                speedUp = true;
-                maxSpeed = 2.5;  // Aumentar la velocidad de las partículas
-            }
-
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
                 let xoff = 0;
@@ -84,12 +56,13 @@
                     let index = x + y * cols;
                     let angle = noise(xoff, yoff, zoff) * TWO_PI;
                     let v = p5.Vector.fromAngle(angle);
-                    v.setMag(0.2);  // Magnitud pequeña para suavidad
+                    v.setMag(1);
                     flowfield[index] = v;
                     xoff += inc;
                 }
                 yoff += inc;
             }
+            zoff += 0.01;
 
             for (let i = 0; i < particles.length; i++) {
                 particles[i].follow(flowfield);
@@ -97,55 +70,15 @@
                 particles[i].edges();
                 particles[i].show();
             }
-
-            zoff += 0.001;
         }
-
-        function startAudioAndAnimation() {
-            console.log('Button clicked, starting audio and animation...'); // Mensaje de depuración para confirmar clic
-
-            if (!audioStarted) {
-                userStartAudio().then(() => {
-                    console.log('Audio started successfully'); // Confirmación en consola
-                    audioStarted = true;
-                    startTime = millis();
-                    document.getElementById("startButton").style.display = "none";  // Ocultar el botón de inicio
-                    loop();  // Comenzar el bucle de animación
-                }).catch((e) => {
-                    console.error('Failed to start audio:', e);
-                });
-            }
-        }
-
-        // Asignar evento al botón para iniciar el audio y la animación
-        document.getElementById("startButton").addEventListener("click", startAudioAndAnimation);
 
         class Particle {
             constructor() {
                 this.pos = createVector(random(width), random(height));
                 this.vel = createVector(0, 0);
                 this.acc = createVector(0, 0);
-                this.maxSpeed = maxSpeed;
+                this.maxSpeed = 2;
                 this.prevPos = this.pos.copy();
-
-                // Crear un oscilador con una frecuencia aleatoria
-                this.oscillator = new p5.Oscillator('sine');
-                this.oscillator.freq(random(60, 8000));  // Frecuencia aleatoria
-                this.oscillator.amp(0.0);
-                this.oscillator.start();
-
-                this.oscillator.disconnect();
-                this.oscillator.connect(globalReverb);
-
-                // Conectar el oscilador a múltiples delays
-                for (let delay of delays) {
-                    delay.process(this.oscillator, delay.delayTime(), 0.4, 200);  // Procesar con feedback corto
-                }
-
-                compressor.process(this.oscillator);
-
-                this.shouldPlaySound = random(1) < 0.2;  // 20% de probabilidad de sonido activo
-                this.isBrightWhite = random(1) < 0.2; // 20% serán partículas brillantes
             }
 
             follow(vectors) {
@@ -162,29 +95,14 @@
 
             update() {
                 this.vel.add(this.acc);
-                this.vel.mult(0.95);  // Suavizar el movimiento
-                this.vel.limit(maxSpeed);
+                this.vel.limit(this.maxSpeed);
                 this.pos.add(this.vel);
                 this.acc.mult(0);
-
-                // Activar sonido dinámico en función del movimiento
-                if (this.shouldPlaySound && this.vel.mag() > 0.1) {
-                    let frequency = random(60, 8000);  // Frecuencia aleatoria en cada activación
-                    this.oscillator.freq(frequency);
-                    this.oscillator.amp(0.2, 0.05);  // Amplitud sutil, fade in rápido
-
-                    // Apagar el sonido rápidamente para evitar saturación
-                    setTimeout(() => {
-                        this.oscillator.amp(0, 0.05);  // Fade out rápido
-                    }, random(200, 400));  // Apagar en milisegundos
-                }
             }
 
             show() {
-                let brightness = map(this.vel.mag(), 0, maxSpeed, 50, 255); // Brillo basado en velocidad
-
-                stroke(this.isBrightWhite ? 255 : brightness, brightness, brightness, 150);
-                strokeWeight(0.5);
+                stroke(255, 150);
+                strokeWeight(1);
                 line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
                 this.prevPos = this.pos.copy();
             }
@@ -198,7 +116,14 @@
             }
         }
 
-        noLoop();  // Evitar que el draw se ejecute hasta que el usuario interactúe
+        document.getElementById("startButton").addEventListener("click", () => {
+            loop();  // Iniciar el ciclo de animación
+            document.getElementById("startButton").style.display = "none";  // Ocultar el botón de inicio
+        });
+
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+        }
     </script>
 </body>
 </html>
