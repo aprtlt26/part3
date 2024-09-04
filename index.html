@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fluid Particle System with Celestial Sound and Light Halos</title>
+    <title>Fluid Particle System with Celestial Sound</title>
     <style>
         body, html {
             margin: 0;
@@ -26,8 +26,8 @@
         let maxSpeed = 2;
         let audioStarted = false;
 
-        // Efectos de sonido
-        let reverb, delay, compressor;
+        // Reverberación global
+        let globalReverb;
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
@@ -35,17 +35,9 @@
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
 
-            // Crear los efectos de sonido
-            reverb = new p5.Reverb();
-            delay = new p5.Delay();
-            compressor = new p5.Compressor();
-
-            reverb.set(12, 6);  // Reverberación larga y envolvente
-            delay.delayTime(0.3);  // Delay con feedback suave
-            compressor.attack(0.01);
-            compressor.release(0.3);
-            compressor.ratio(8);
-            compressor.threshold(-24);
+            // Configurar reverb global
+            globalReverb = new p5.Reverb();
+            globalReverb.set(12, 8);  // Reverberación larga y envolvente
 
             // Crear partículas
             for (let i = 0; i < 500; i++) {
@@ -56,7 +48,7 @@
         }
 
         function draw() {
-            if (!audioStarted) return;  // No dibujar ni activar sonidos hasta que el audio esté habilitado
+            if (!audioStarted) return;
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -104,14 +96,12 @@
                 this.oscillator.amp(0);  // Comienza en silencio
                 this.oscillator.start();
 
-                // Aplicar efectos de sonido
+                // Conectar el oscilador a la reverb global
                 this.oscillator.disconnect();
-                this.oscillator.connect(reverb);
-                delay.process(this.oscillator, 0.3, 0.4, 200);  // Delay corto
-                compressor.process(this.oscillator);
+                this.oscillator.connect(globalReverb);
 
                 // Controlar cuándo debe sonar
-                this.shouldPlaySound = random(1) < 0.2;  // 20% de probabilidad de que tenga sonido activo
+                this.shouldPlaySound = random(1) < 0.2;  // 20% de probabilidad de sonido activo
             }
 
             follow(vectors) {
@@ -133,9 +123,9 @@
                 this.acc.mult(0);
 
                 if (this.shouldPlaySound && this.vel.mag() > 0.1) {
-                    this.oscillator.amp(0.05, 0.05);  // Fade in suave
+                    this.oscillator.amp(0.02, 0.5);  // Fade in suave y bajo volumen
                     setTimeout(() => {
-                        this.oscillator.amp(0, 1);  // Fade out lento
+                        this.oscillator.amp(0, 1);  // Fade out
                     }, 5000);
                 }
             }
