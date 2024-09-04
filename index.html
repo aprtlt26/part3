@@ -69,8 +69,6 @@
         }
 
         function draw() {
-            if (!audioStarted) return;  // Esperar a que el audio comience
-
             let currentTime = millis();
 
             // Acelerar las partículas después de 20 segundos
@@ -113,13 +111,15 @@
                     audioStarted = true;
                     startTime = millis();
                     document.getElementById("startButton").style.display = "none";  // Ocultar el botón de inicio
-                    loop();  // Comenzar el bucle de draw
                 });
             }
         }
 
-        // Controlar el botón para iniciar el audio
-        document.getElementById("startButton").addEventListener("click", startAudio);
+        // Controlar el botón para iniciar el audio y la animación
+        document.getElementById("startButton").addEventListener("click", () => {
+            startAudio();
+            loop();  // Iniciar el ciclo de animación
+        });
 
         class Particle {
             constructor() {
@@ -199,7 +199,7 @@
             }
         }
 
-        noLoop();  // Esperar hasta que el usuario interactúe
+        noLoop();  // Evitar que el draw se ejecute hasta que el usuario interactúe
     </script>
 </body>
 </html>
