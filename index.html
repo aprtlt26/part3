@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fluid Particle System with Sound</title>
+    <title>Fluid Particle System with Celestial Sound and Light Halos</title>
     <style>
         body, html {
             margin: 0;
@@ -26,12 +26,28 @@
         let maxSpeed = 2;
         let audioStarted = false;
 
+        // Efectos de sonido
+        let reverb, delay, compressor;
+
         function setup() {
             createCanvas(windowWidth, windowHeight);
             cols = floor(width / scl);
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
 
+            // Crear los efectos de sonido
+            reverb = new p5.Reverb();
+            delay = new p5.Delay();
+            compressor = new p5.Compressor();
+
+            reverb.set(12, 6);  // Reverberación larga y envolvente
+            delay.delayTime(0.3);  // Delay con feedback suave
+            compressor.attack(0.01);
+            compressor.release(0.3);
+            compressor.ratio(8);
+            compressor.threshold(-24);
+
+            // Crear partículas
             for (let i = 0; i < 500; i++) {
                 particles[i] = new Particle();
             }
@@ -85,10 +101,15 @@
                 // Crear un oscilador con una frecuencia aleatoria
                 this.oscillator = new p5.Oscillator('sine');
                 this.oscillator.freq(random(100, 2200));
-                this.oscillator.amp(0.5);
+                this.oscillator.amp(0);  // Comienza en silencio
                 this.oscillator.start();
-                this.oscillator.stop();  // Iniciar parado
-                
+
+                // Aplicar efectos de sonido
+                this.oscillator.disconnect();
+                this.oscillator.connect(reverb);
+                delay.process(this.oscillator, 0.3, 0.4, 200);  // Delay corto
+                compressor.process(this.oscillator);
+
                 // Controlar cuándo debe sonar
                 this.shouldPlaySound = random(1) < 0.2;  // 20% de probabilidad de que tenga sonido activo
             }
@@ -112,20 +133,26 @@
                 this.acc.mult(0);
 
                 if (this.shouldPlaySound && this.vel.mag() > 0.1) {
-                    this.oscillator.start();
-                    this.oscillator.amp(0.5, 0.05);
+                    this.oscillator.amp(0.05, 0.05);  // Fade in suave
                     setTimeout(() => {
-                        this.oscillator.amp(0, 0.05);
-                        this.oscillator.stop();
-                    }, 10000);
+                        this.oscillator.amp(0, 1);  // Fade out lento
+                    }, 5000);
                 }
             }
 
             show() {
-                stroke(255, 100);
+                stroke(255, 50);  // Blanco suave
                 strokeWeight(1);
+
+                // Dibujar las líneas de las partículas
                 line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
                 this.prevPos = this.pos.copy();
+
+                // Dibujar un halo sutil alrededor de la partícula
+                noFill();
+                stroke(255, 20);
+                strokeWeight(3);
+                ellipse(this.pos.x, this.pos.y, 10);  // Halo muy sutil
             }
 
             edges() {
