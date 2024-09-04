@@ -51,18 +51,18 @@
 
             // Configurar reverb y delays
             globalReverb = new p5.Reverb();
-            globalReverb.set(15, 8);  // Reverb larga
+            globalReverb.set(12, 6);  // Reverb larga y envolvente
 
             for (let i = 0; i < 4; i++) {
                 let delay = new p5.Delay();
-                delay.delayTime(0.03 + i * 0.01);  // Retrasos cortos y distintos
+                delay.delayTime(0.05 + i * 0.01);  // Retrasos cortos y distintos
                 delays.push(delay);
             }
 
             compressor = new p5.Compressor();
             compressor.attack(0.01);
-            compressor.release(0.8);
-            compressor.ratio(6);
+            compressor.release(0.5);
+            compressor.ratio(8);
             compressor.threshold(-24);
 
             // Crear partículas
@@ -118,22 +118,23 @@
                 this.prevPos = this.pos.copy();
 
                 // Crear oscilador para sonido
+                this.baseFreq = random(50, 3000);  // Frecuencia aleatoria de 50 a 3000 Hz
                 this.oscillator = new p5.Oscillator('sine');
-                this.oscillator.freq(random(200, 8000));  // Frecuencia aleatoria
+                this.oscillator.freq(this.baseFreq);
                 this.oscillator.amp(0);
-                this.oscillator.start();
 
                 this.oscillator.disconnect();
                 this.oscillator.connect(globalReverb);
 
                 // Conectar a los delays
                 for (let delay of delays) {
-                    delay.process(this.oscillator, 0.1, 0.4, 100);
+                    delay.process(this.oscillator, delay.delayTime(), 0.4, 200);  // Procesar con feedback corto
                 }
                 compressor.process(this.oscillator);
 
-                this.shouldPlaySound = random(1) < 0.2;  // Probabilidad de que cada partícula tenga sonido
-                this.soundDuration = random(300, 1000);  // Duración del sonido
+                this.shouldPlaySound = random(1) < 0.15;  // Probabilidad de que cada partícula tenga sonido (15%)
+                this.soundDuration = random(5000, 15000);  // Duración del sonido aleatoria entre 5 y 15 segundos
+                this.nextSoundTime = millis() + random(3000, 10000);  // Tiempo hasta que suene nuevamente
             }
 
             follow(vectors) {
@@ -154,12 +155,16 @@
                 this.pos.add(this.vel);
                 this.acc.mult(0);
 
-                // Activar sonido en función del movimiento
-                if (this.shouldPlaySound && this.vel.mag() > 0.5) {
-                    this.oscillator.amp(0.05, 0.05);  // Fade in
+                let currentTime = millis();
+                if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
+                    this.oscillator.start();
+                    this.oscillator.amp(random(0.2, 0.7), 0.5);  // Fade in suave
                     setTimeout(() => {
-                        this.oscillator.amp(0, 0.1);  // Fade out
-                    }, this.soundDuration);
+                        this.oscillator.amp(0, 1);  // Fade out al final
+                        setTimeout(() => this.oscillator.stop(), 1000);  // Apagar el oscilador después del fade out
+                    }, this.soundDuration - 1000);
+
+                    this.nextSoundTime = currentTime + random(3000, 10000);  // Recalcular el próximo tiempo para que suene
                 }
             }
 
@@ -226,5 +231,6 @@
     </script>
 </body>
 </html>
+
 
 
