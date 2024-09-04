@@ -91,7 +91,7 @@
             zoff += 0.003;
 
             // Modificar la amplitud del ruido verde con el LFO
-            let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0, 0.1);  // Mapear el LFO para modular suavemente
+            let noiseAmplitude = map(lfo.getAmp(), -1, 2, 0, 0.3);  // Mapear el LFO para modular suavemente
             noiseOscillator.amp(noiseAmplitude, 0.5);  // Aplicar el LFO al ruido con un fade in suave
 
             // Dibujar el punto negro que borra partículas
@@ -126,7 +126,7 @@
                 this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
 
-                this.baseFreq = random(50, 3000);  // Ampliación del rango de frecuencia
+                this.baseFreq = random(200, 6000);  // Ampliación del rango de frecuencia
                 this.oscillator = new p5.Oscillator('sine');
                 this.oscillator.freq(this.baseFreq);
                 this.oscillator.amp(0);
