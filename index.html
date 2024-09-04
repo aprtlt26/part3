@@ -14,20 +14,21 @@
     </style>
 </head>
 <body>
+    <button id="startButton" style="position: absolute; z-index: 10; padding: 20px; background-color: white; border: none; font-size: 20px; cursor: pointer;">Start</button>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
     <script>
-        let inc = 0.015;  // Incremento aún más pequeño para un movimiento más suave
-        let scl = 15;    // Mantener la escala para la distribución adecuada de partículas
+        let inc = 0.015;  // Incremento para movimiento suave
+        let scl = 15;
         let cols, rows;
         let zoff = 0;
         let particles = [];
         let flowfield;
-        let maxSpeed = 0.8;  // Velocidad reducida para suavidad
-        let speedUp = false; // Control para acelerar el movimiento a los 20 segundos
+        let maxSpeed = 0.8;
+        let speedUp = false;
         let startTime;
+        let audioStarted = false;
 
-        // Sonido
         let globalReverb;
         let delay;
         let compressor;
@@ -40,14 +41,11 @@
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
 
-            // Configurar la reverb profunda
+            // Configurar efectos de sonido
             globalReverb = new p5.Reverb();
-            globalReverb.set(12, 8);  // Reverb larga y envolvente
+            globalReverb.set(12, 8);  // Reverb profunda
 
-            // Configurar delay corto
             delay = new p5.Delay();
-
-            // Configurar compresor
             compressor = new p5.Compressor();
             compressor.attack(0.01);
             compressor.release(0.5);
@@ -60,18 +58,17 @@
             }
 
             background(0);
-            startTime = millis(); // Guardar el tiempo de inicio para aplicar el cambio de velocidad
         }
 
         function draw() {
-            let currentTime = millis();
+            if (!audioStarted) return;  // Esperar a que el audio comience
 
-            if (!audioStarted) return;
+            let currentTime = millis();
 
             // Acelerar las partículas después de 20 segundos
             if (currentTime - startTime > 20000 && !speedUp) {
                 speedUp = true;
-                maxSpeed = 2.5;  // Aumentar la velocidad de las partículas para simular flotación rápida
+                maxSpeed = 2.5;  // Aumentar la velocidad de las partículas
             }
 
             let yoff = 0;
@@ -88,7 +85,6 @@
                 yoff += inc;
             }
 
-            // Actualizar partículas
             for (let i = 0; i < particles.length; i++) {
                 particles[i].follow(flowfield);
                 particles[i].update();
@@ -96,16 +92,27 @@
                 particles[i].show();
             }
 
-            zoff += 0.001;  // Movimiento muy suave del campo de flujo
+            zoff += 0.001;
         }
 
         function mousePressed() {
+            // Este evento será manejado cuando el usuario haga clic en cualquier parte de la pantalla
+            startAudio();
+        }
+
+        function startAudio() {
             if (!audioStarted) {
-                userStartAudio();  // Iniciar el contexto de audio
-                audioStarted = true;
-                loop();  // Comenzar el bucle de draw
+                userStartAudio().then(() => {
+                    audioStarted = true;
+                    startTime = millis();
+                    document.getElementById("startButton").style.display = "none";  // Ocultar el botón de inicio
+                    loop();  // Comenzar el bucle de draw
+                });
             }
         }
+
+        // Controlar el botón para iniciar el audio
+        document.getElementById("startButton").addEventListener("click", startAudio);
 
         class Particle {
             constructor() {
@@ -117,14 +124,13 @@
 
                 // Crear un oscilador con una frecuencia aleatoria
                 this.oscillator = new p5.Oscillator('sine');
-                this.oscillator.freq(random(200, 2200));  // Frecuencia inicial aleatoria
+                this.oscillator.freq(random(200, 2200));
                 this.oscillator.amp(0.0);
                 this.oscillator.start();
 
-                // Conectar a efectos
                 this.oscillator.disconnect();
                 this.oscillator.connect(globalReverb);
-                delay.process(this.oscillator, 0.2, 0.5, 1000); // Delay corto para eco tenue
+                delay.process(this.oscillator, 0.2, 0.5, 1000);  // Delay corto
                 compressor.process(this.oscillator);
 
                 this.shouldPlaySound = random(1) < 0.2;  // 20% de probabilidad de sonido activo
@@ -180,7 +186,7 @@
             }
         }
 
-        noLoop();  // Evitar que el draw se ejecute hasta que el usuario interactúe
+        noLoop();  // Esperar hasta que el usuario interactúe
     </script>
 </body>
 </html>
