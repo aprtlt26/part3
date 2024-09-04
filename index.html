@@ -93,7 +93,7 @@ noiseOscillator.amp(0.3, 1);  // Aumentar el volumen del ruido verde
 
             // Ajustar la amplitud del ruido verde con LFO más notable
             let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.1, 0.5);  // Aumentar el rango de amplitud
-            noiseOscillator.amp(noiseAmplitude, 0.6); 
+            noiseOscillator.amp(noiseAmplitude, 1); 
 
             if (erasePoint) {
                 fill(0);
@@ -126,7 +126,7 @@ noiseOscillator.amp(0.3, 1);  // Aumentar el volumen del ruido verde
                 this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
 
-                this.baseFreq = random(100, 7000);  
+                this.baseFreq = random(100, 5000);  
                 this.oscillator = new p5.Oscillator('sine');
                 this.oscillator.freq(this.baseFreq);
                 this.oscillator.amp(0);
