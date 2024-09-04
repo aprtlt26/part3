@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fluid Particle System with Enhanced Sound and Light Effects</title>
+    <title>Fluid Particle System with Sound</title>
     <style>
         body, html {
             margin: 0;
@@ -11,36 +11,20 @@
             overflow: hidden;
             background: black;
         }
-        #startButton {
-            position: absolute;
-            z-index: 10;
-            padding: 20px;
-            background-color: white;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-        }
     </style>
 </head>
 <body>
-    <button id="startButton">Start</button>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
     <script>
-        let particles = [];
-        let cols, rows;
-        let flowfield;
-        let scl = 20;
         let inc = 0.1;
+        let scl = 10;
+        let cols, rows;
         let zoff = 0;
+        let particles = [];
+        let flowfield;
+        let maxSpeed = 2;
         let audioStarted = false;
-
-        // Efectos de sonido
-        let whiteNoise, noiseFilter, schumannOscillator, reverb, delay, distortion;
-        let mouseNoise;
-
-        // Puntos de luz de neón
-        let neonPoints = [];
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
@@ -48,44 +32,15 @@
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
 
-            // Crear ruido blanco filtrado
-            whiteNoise = new p5.Noise('white');
-            noiseFilter = new p5.LowPass();
-            noiseFilter.freq(500);  // Filtrar a 500 Hz
-            whiteNoise.disconnect();
-            whiteNoise.connect(noiseFilter);
-            whiteNoise.start();
-            whiteNoise.amp(0.2, 5);  // Amplitud baja para crear un fondo suave
-
-            // Oscilador Schumann (7.83 Hz)
-            schumannOscillator = new p5.Oscillator('sine', 7.83);
-            schumannOscillator.amp(0.05);  // Volumen bajo
-            schumannOscillator.start();
-
-            // Reverberación profunda y distorsión
-            reverb = new p5.Reverb();
-            reverb.process(noiseFilter, 8, 5);  // Reverberación larga
-            delay = new p5.Delay();
-            delay.process(noiseFilter, 0.3, 0.4, 200);  // Delay con corto feedback
-            distortion = new p5.Distortion(0.5);  // Distorsión suave
-            distortion.process(noiseFilter);
-
-            // Ruido para el puntero del mouse
-            mouseNoise = new p5.Noise('white');
-            mouseNoise.amp(0);  // Silencio al principio
-            mouseNoise.start();
-
-            // Crear partículas
-            for (let i = 0; i < 600; i++) {
+            for (let i = 0; i < 500; i++) {
                 particles[i] = new Particle();
             }
 
             background(0);
-            noLoop();  // Evitar que draw corra hasta que se presione el botón
         }
 
         function draw() {
-            background(0, 10);  // Mantener un fondo oscuro, pero sin borrar los hilos
+            if (!audioStarted) return;  // No dibujar ni activar sonidos hasta que el audio esté habilitado
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -94,29 +49,28 @@
                     let index = x + y * cols;
                     let angle = noise(xoff, yoff, zoff) * TWO_PI;
                     let v = p5.Vector.fromAngle(angle);
-                    v.setMag(1);
+                    v.y += 1;
+                    v.setMag(0.5);
                     flowfield[index] = v;
                     xoff += inc;
                 }
                 yoff += inc;
             }
-            zoff += 0.01;
 
-            // Actualizar y mostrar partículas
             for (let i = 0; i < particles.length; i++) {
                 particles[i].follow(flowfield);
                 particles[i].update();
                 particles[i].edges();
                 particles[i].show();
             }
+            zoff += 0.003;
+        }
 
-            // Mostrar el punto de luz de neón del mouse
-            for (let i = neonPoints.length - 1; i >= 0; i--) {
-                neonPoints[i].display();
-                neonPoints[i].reduceOpacity();
-                if (neonPoints[i].opacity <= 0) {
-                    neonPoints.splice(i, 1);  // Eliminar el punto de luz cuando se desvanezca
-                }
+        function mousePressed() {
+            if (!audioStarted) {
+                userStartAudio();  // Iniciar el contexto de audio
+                audioStarted = true;
+                loop();  // Comenzar el bucle de draw
             }
         }
 
@@ -125,8 +79,18 @@
                 this.pos = createVector(random(width), random(height));
                 this.vel = createVector(0, 0);
                 this.acc = createVector(0, 0);
-                this.maxSpeed = 2;
+                this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
+
+                // Crear un oscilador con una frecuencia aleatoria
+                this.oscillator = new p5.Oscillator('sine');
+                this.oscillator.freq(random(100, 2200));
+                this.oscillator.amp(0.5);
+                this.oscillator.start();
+                this.oscillator.stop();  // Iniciar parado
+                
+                // Controlar cuándo debe sonar
+                this.shouldPlaySound = random(1) < 0.2;  // 20% de probabilidad de que tenga sonido activo
             }
 
             follow(vectors) {
@@ -146,13 +110,22 @@
                 this.vel.limit(this.maxSpeed);
                 this.pos.add(this.vel);
                 this.acc.mult(0);
+
+                if (this.shouldPlaySound && this.vel.mag() > 0.1) {
+                    this.oscillator.start();
+                    this.oscillator.amp(0.5, 0.05);
+                    setTimeout(() => {
+                        this.oscillator.amp(0, 0.05);
+                        this.oscillator.stop();
+                    }, 10000);
+                }
             }
 
             show() {
-                stroke(255, 200);
-                strokeWeight(0.5);  // Mantener las líneas delgadas, como hilos
+                stroke(255, 100);
+                strokeWeight(1);
                 line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
-                this.prevPos = this.pos.copy();  // Actualizar la posición anterior
+                this.prevPos = this.pos.copy();
             }
 
             edges() {
@@ -164,60 +137,7 @@
             }
         }
 
-        class NeonPoint {
-            constructor(x, y) {
-                this.x = x;
-                this.y = y;
-                this.opacity = 255;
-                this.size = 0;  // Tamaño del punto de luz
-                this.glowSize = 20;  // Tamaño del resplandor de neón
-                this.color = color(255, 255, 250, this.opacity);  // Luz blanca/amarilla
-            }
-
-            display() {
-                noStroke();
-                // Dibujar el resplandor del neón
-                fill(255, 255, 100, this.opacity * 0.2);  // Luz difusa alrededor
-                ellipse(this.x, this.y, this.glowSize);
-                // Dibujar el punto central
-                fill(this.color);
-                ellipse(this.x, this.y, this.size);
-            }
-
-            reduceOpacity() {
-                this.opacity -= 8;  // Reducir la opacidad lentamente
-                this.color.setAlpha(this.opacity);
-            }
-        }
-
-        // Agregar punto de luz al mover el mouse
-        function mouseMoved() {
-            let neonPoint = new NeonPoint(mouseX, mouseY);
-            neonPoints.push(neonPoint);
-
-            // Activar ruido distorsionado mientras el mouse se mueve
-            mouseNoise.amp(0.2, 0.05);  // Sonido rápido al mover el mouse
-        }
-
-        function mouseReleased() {
-            mouseNoise.amp(0, 0.05);  // Apagar sonido cuando el mouse deja de moverse
-        }
-
-        document.getElementById("startButton").addEventListener("click", () => {
-            userStartAudio().then(() => {
-                // Oscilador de frecuencia Schumann
-                schumannOscillator.amp(0.2, 5);  // Fade-in suave para un efecto ambiental
-
-                loop();  // Iniciar el ciclo de animación
-                document.getElementById("startButton").style.display = "none";  // Ocultar el botón
-            }).catch((error) => {
-                console.error('Error al iniciar el audio:', error);
-            });
-        });
-
-        function windowResized() {
-            resizeCanvas(windowWidth, windowHeight);
-        }
+        noLoop();  // Evitar que el draw se ejecute hasta que el usuario interactúe
     </script>
 </body>
 </html>
