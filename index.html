@@ -35,9 +35,8 @@
         let zoff = 0;
         let audioStarted = false;
 
-        // Sonido
-        let whiteNoise, noiseFilter, lfo;
-        let schumannOscillator, randomOscillator, reverb, delay, distortion;
+        // Efectos de sonido
+        let whiteNoise, noiseFilter, schumannOscillator, reverb, delay, distortion;
         let mouseNoise;
 
         // Puntos de luz de neón
@@ -55,30 +54,22 @@
             noiseFilter.freq(500);  // Filtrar a 500 Hz
             whiteNoise.disconnect();
             whiteNoise.connect(noiseFilter);
-            lfo = new p5.Oscillator('sine', 0.2);  // LFO lento
-            lfo.disconnect();
-            lfo.start();
-            lfo.amp(1, 5);  // Pulso cada 5 segundos
+            whiteNoise.start();
+            whiteNoise.amp(0.2, 5);  // Amplitud baja para crear un fondo suave
 
             // Oscilador Schumann (7.83 Hz)
             schumannOscillator = new p5.Oscillator('sine', 7.83);
             schumannOscillator.amp(0.05);  // Volumen bajo
             schumannOscillator.start();
 
-            // Oscilador de frecuencia aleatoria
-            randomOscillator = new p5.Oscillator('sine');
-            randomOscillator.freq(random(100, 8000));
-            randomOscillator.amp(0.0);
-            randomOscillator.start();
-
             // Reverberación profunda y distorsión
             reverb = new p5.Reverb();
             reverb.process(noiseFilter, 8, 5);  // Reverberación larga
             delay = new p5.Delay();
-            delay.process(randomOscillator, 0.5, 0.7, 1000);  // Delay corto
-            distortion = new p5.Distortion(0.4);  // Distorsión ligera
+            delay.process(noiseFilter, 0.3, 0.4, 200);  // Delay con corto feedback
+            distortion = new p5.Distortion(0.5);  // Distorsión suave
             distortion.process(noiseFilter);
-            
+
             // Ruido para el puntero del mouse
             mouseNoise = new p5.Noise('white');
             mouseNoise.amp(0);  // Silencio al principio
@@ -214,15 +205,8 @@
 
         document.getElementById("startButton").addEventListener("click", () => {
             userStartAudio().then(() => {
-                whiteNoise.start();  // Iniciar el ruido blanco
-                randomOscillator.amp(0.2, 0.5);  // Fade in al azar
-                setInterval(() => {
-                    randomOscillator.freq(random(100, 8000));  // Frecuencia aleatoria
-                    randomOscillator.amp(0.2, 0.5);  // Fade in
-                    setTimeout(() => {
-                        randomOscillator.amp(0, 1);  // Fade out
-                    }, 5000);  // Cada 5 segundos
-                }, 10000);  // Ciclo de 10 segundos con 5 segundos de sonido y 5 de silencio
+                // Oscilador de frecuencia Schumann
+                schumannOscillator.amp(0.2, 5);  // Fade-in suave para un efecto ambiental
 
                 loop();  // Iniciar el ciclo de animación
                 document.getElementById("startButton").style.display = "none";  // Ocultar el botón
