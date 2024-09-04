@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fluid Particle System with White Noise and LFO</title>
+    <title>Fluid Particle System with Neon Light Effect</title>
     <style>
         body, html {
             margin: 0;
@@ -75,6 +75,11 @@
             mouseNoise = new p5.Noise('white');
             mouseNoise.amp(0);  // Silencio al principio
             mouseNoise.start();
+
+            // Crear partículas
+            for (let i = 0; i < 600; i++) {
+                particles[i] = new Particle();
+            }
 
             background(0);
             noLoop();  // Evitar que draw corra hasta que se presione el botón
