@@ -61,8 +61,8 @@
 
             compressor = new p5.Compressor();
             compressor.attack(0.01);
-            compressor.release(0.9);
-            compressor.ratio(8);
+            compressor.release(0.8);
+            compressor.ratio(6);
             compressor.threshold(-24);
 
             // Crear partículas
@@ -74,7 +74,7 @@
         }
 
         function draw() {
-            background(0, 5);  // Mantener un fondo oscuro, pero sin borrar los hilos
+            background(0, 8);  // Mantener un fondo oscuro, pero sin borrar los hilos
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -104,7 +104,7 @@
                 neonPoints[i].display();
                 neonPoints[i].reduceOpacity();
                 if (neonPoints[i].opacity <= 0) {
-                    neonPoints.splice(i, 1);  // Eliminar el punto de luz cuando se desvanezca
+                    neonPoints.splice(i, 2);  // Eliminar el punto de luz cuando se desvanezca
                 }
             }
         }
@@ -184,15 +184,15 @@
                 this.x = x;
                 this.y = y;
                 this.opacity = 255;
-                this.size = 5;  // Tamaño del punto de luz
+                this.size = 0;  // Tamaño del punto de luz
                 this.glowSize = 20;  // Tamaño del resplandor de neón
-                this.color = color(255, 255, 155, this.opacity);  // Luz blanca/amarilla
+                this.color = color(255, 255, 100, this.opacity);  // Luz blanca/amarilla
             }
 
             display() {
                 noStroke();
                 // Dibujar el resplandor del neón
-                fill(255, 255, 230, this.opacity * 0.2);  // Luz difusa alrededor
+                fill(255, 255, 100, this.opacity * 0.2);  // Luz difusa alrededor
                 ellipse(this.x, this.y, this.glowSize);
                 // Dibujar el punto central
                 fill(this.color);
@@ -200,7 +200,7 @@
             }
 
             reduceOpacity() {
-                this.opacity -= 5;  // Reducir la opacidad lentamente
+                this.opacity -= 3;  // Reducir la opacidad lentamente
                 this.color.setAlpha(this.opacity);
             }
         }
