@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fluid Particle System with Enhanced Audio and Touch Interaction</title>
+    <title>Fluid Particle System with Green Noise and Enhanced Audio</title>
     <style>
         body, html {
             margin: 0;
@@ -25,7 +25,7 @@
         let flowfield;
         let maxSpeed = 0.3;
         let audioStarted = false;
-        let globalReverb;
+        let globalReverb, noiseOscillator, lfo;
 
         // Variables para el punto negro que borra
         let erasePoint;
@@ -39,6 +39,22 @@
             // Configurar reverb global
             globalReverb = new p5.Reverb();
             globalReverb.set(12, 8); // Reverberación amplia
+
+            // Crear el ruido verde con un filtro de paso bajo
+            noiseOscillator = new p5.Noise('pink');
+            let lowPassFilter = new p5.LowPass();
+            lowPassFilter.freq(500); // Filtro de paso bajo para un ruido más "verde"
+            noiseOscillator.disconnect();
+            noiseOscillator.connect(lowPassFilter);
+            noiseOscillator.amp(0);  // Comienza en silencio
+            noiseOscillator.start();
+
+            // Configurar el LFO para modular la amplitud del ruido verde
+            lfo = new p5.Oscillator('sine');
+            lfo.freq(random(1 / 7, 1 / 5));  // LFO con frecuencia aleatoria entre 5 y 7 segundos
+            lfo.disconnect();  // No necesita generar sonido directamente
+            lfo.amp(0.05);  // Amplitud del LFO (muy suave)
+            lfo.start();
 
             // Crear partículas
             for (let i = 0; i < 500; i++) {
@@ -81,6 +97,10 @@
             }
 
             zoff += 0.003;
+
+            // Modificar la amplitud del ruido verde con el LFO
+            let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0, 0.1);  // Mapear el LFO para modular suavemente
+            noiseOscillator.amp(noiseAmplitude, 0.5);  // Aplicar el LFO al ruido con un fade in suave
 
             // Dibujar el punto negro que borra partículas
             if (erasePoint) {
@@ -188,6 +208,7 @@
     </script>
 </body>
 </html>
+
 
 
 
