@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fluid Particle System with Celestial Sound</title>
+    <title>Fluid Particle System with Enhanced Audio and Touch Interaction</title>
     <style>
         body, html {
             margin: 0;
@@ -25,9 +25,10 @@
         let flowfield;
         let maxSpeed = 0.3;
         let audioStarted = false;
+        let globalReverb, globalCompressor;
 
-        // Reverberación global
-        let globalReverb;
+        // Variables para el punto negro que borra
+        let erasePoint;
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
@@ -35,9 +36,15 @@
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
 
-            // Configurar reverb global
+            // Configurar reverb y compresión general
             globalReverb = new p5.Reverb();
-            globalReverb.set(12, 8);  // Reverberación larga y envolvente
+            globalReverb.set(12, 8); // Reverberación amplia
+
+            globalCompressor = new p5.Compressor();
+            globalCompressor.attack(0.01);
+            globalCompressor.release(0.5);
+            globalCompressor.threshold(-12);
+            globalCompressor.ratio(6);
 
             // Crear partículas
             for (let i = 0; i < 500; i++) {
@@ -50,6 +57,8 @@
         function draw() {
             if (!audioStarted) return;
 
+            background(0, 10); // Fondo semitransparente para un efecto de desvanecimiento suave
+
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
                 let xoff = 0;
@@ -57,7 +66,6 @@
                     let index = x + y * cols;
                     let angle = noise(xoff, yoff, zoff) * TWO_PI;
                     let v = p5.Vector.fromAngle(angle);
-                    v.y += 1;
                     v.setMag(0.5);
                     flowfield[index] = v;
                     xoff += inc;
@@ -65,13 +73,27 @@
                 yoff += inc;
             }
 
+            // Actualizar partículas
             for (let i = 0; i < particles.length; i++) {
                 particles[i].follow(flowfield);
                 particles[i].update();
                 particles[i].edges();
                 particles[i].show();
+
+                // Si la partícula está cerca del punto negro, la eliminamos temporalmente
+                if (erasePoint && dist(erasePoint.x, erasePoint.y, particles[i].pos.x, particles[i].pos.y) < 50) {
+                    particles[i].pos = createVector(random(width), random(height)); // La "revivimos" en otra parte
+                }
             }
+
             zoff += 0.003;
+
+            // Dibujar el punto negro que borra partículas
+            if (erasePoint) {
+                fill(0);
+                noStroke();
+                ellipse(erasePoint.x, erasePoint.y, 50);
+            }
         }
 
         function mousePressed() {
@@ -82,6 +104,14 @@
             }
         }
 
+        function touchMoved() {
+            erasePoint = createVector(mouseX, mouseY);
+        }
+
+        function touchEnded() {
+            erasePoint = null; // Dejar de borrar
+        }
+
         class Particle {
             constructor() {
                 this.pos = createVector(random(width), random(height));
@@ -90,18 +120,25 @@
                 this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
 
-                // Crear un oscilador con una frecuencia aleatoria
+                // Crear oscilador con una frecuencia aleatoria y efectos
                 this.oscillator = new p5.Oscillator('sine');
-                this.oscillator.freq(random(200, 7000));
+                this.oscillator.freq(random(200, 700)); // Frecuencias entre 200 y 700 Hz
                 this.oscillator.amp(0);  // Comienza en silencio
+
+                let oscDelay = new p5.Delay();
+                oscDelay.process(this.oscillator, 0.1, 0.5, 500); // Delay corto
+                oscDelay.feedback(0.5);
                 this.oscillator.start();
 
-                // Conectar el oscilador a la reverb global
+                // Conectar el oscilador a la reverb y compresor global
                 this.oscillator.disconnect();
                 this.oscillator.connect(globalReverb);
+                globalCompressor.process(this.oscillator);
 
                 // Controlar cuándo debe sonar
-                this.shouldPlaySound = random(1) < 0.1;  // 20% de probabilidad de sonido activo
+                this.shouldPlaySound = random(1) < 0.1;  // 10% de probabilidad de sonido activo
+                this.soundDuration = 10000;  // Duración del sonido: 10 segundos
+                this.nextSoundTime = millis() + random(3000, 15000);  // Tiempo para el próximo sonido
             }
 
             follow(vectors) {
@@ -122,11 +159,14 @@
                 this.pos.add(this.vel);
                 this.acc.mult(0);
 
-                if (this.shouldPlaySound && this.vel.mag() > 0.1) {
-                    this.oscillator.amp(0.03, 0.3);  // Fade in suave y bajo volumen
+                let currentTime = millis();
+                if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
+                    this.oscillator.amp(0.05, 0.5);  // Fade in
                     setTimeout(() => {
                         this.oscillator.amp(0, 1);  // Fade out
-                    }, 5000);
+                    }, this.soundDuration);
+
+                    this.nextSoundTime = currentTime + random(3000, 15000);  // Establecer el próximo tiempo para que suene
                 }
             }
 
