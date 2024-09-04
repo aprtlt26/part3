@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fluid Particle System</title>
+    <title>Fluid Particle System with Sound</title>
     <style>
         body, html {
             margin: 0;
@@ -25,6 +25,7 @@
 <body>
     <button id="startButton">Start</button>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
     <script>
         let particles = [];
         let cols, rows;
@@ -34,11 +35,32 @@
         let zoff = 0;
         let audioStarted = false;
 
+        // Efectos de sonido
+        let globalReverb;
+        let delays = [];
+        let compressor;
+
         function setup() {
             createCanvas(windowWidth, windowHeight);
             cols = floor(width / scl);
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
+
+            // Configurar reverb y delays
+            globalReverb = new p5.Reverb();
+            globalReverb.set(12, 6);  // Reverb larga
+
+            for (let i = 0; i < 4; i++) {
+                let delay = new p5.Delay();
+                delay.delayTime(0.05 + i * 0.01);  // Retrasos cortos y distintos
+                delays.push(delay);
+            }
+
+            compressor = new p5.Compressor();
+            compressor.attack(0.01);
+            compressor.release(0.5);
+            compressor.ratio(8);
+            compressor.threshold(-24);
 
             // Crear partículas
             for (let i = 0; i < 300; i++) {
@@ -79,6 +101,24 @@
                 this.acc = createVector(0, 0);
                 this.maxSpeed = 2;
                 this.prevPos = this.pos.copy();
+
+                // Crear oscilador para sonido
+                this.oscillator = new p5.Oscillator('sine');
+                this.oscillator.freq(random(100, 1000));  // Frecuencia aleatoria
+                this.oscillator.amp(0);
+                this.oscillator.start();
+
+                this.oscillator.disconnect();
+                this.oscillator.connect(globalReverb);
+
+                // Conectar a los delays
+                for (let delay of delays) {
+                    delay.process(this.oscillator, 0.1, 0.4, 200);
+                }
+                compressor.process(this.oscillator);
+
+                this.shouldPlaySound = random(1) < 0.1;  // Probabilidad de que cada partícula tenga sonido
+                this.soundDuration = random(300, 1000);  // Duración del sonido
             }
 
             follow(vectors) {
@@ -98,6 +138,14 @@
                 this.vel.limit(this.maxSpeed);
                 this.pos.add(this.vel);
                 this.acc.mult(0);
+
+                // Activar sonido en función del movimiento
+                if (this.shouldPlaySound && this.vel.mag() > 0.5) {
+                    this.oscillator.amp(0.1, 0.05);  // Fade in
+                    setTimeout(() => {
+                        this.oscillator.amp(0, 0.1);  // Fade out
+                    }, this.soundDuration);
+                }
             }
 
             show() {
@@ -117,8 +165,12 @@
         }
 
         document.getElementById("startButton").addEventListener("click", () => {
-            loop();  // Iniciar el ciclo de animación
-            document.getElementById("startButton").style.display = "none";  // Ocultar el botón de inicio
+            userStartAudio().then(() => {
+                loop();  // Iniciar el ciclo de animación
+                document.getElementById("startButton").style.display = "none";  // Ocultar el botón
+            }).catch((error) => {
+                console.error('Error al iniciar el audio:', error);
+            });
         });
 
         function windowResized() {
@@ -127,6 +179,7 @@
     </script>
 </body>
 </html>
+
 
 
 
