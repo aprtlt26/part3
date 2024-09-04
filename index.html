@@ -55,7 +55,7 @@
 
             for (let i = 0; i < 4; i++) {
                 let delay = new p5.Delay();
-                delay.delayTime(0.05 + i * 0.01);  // Retrasos cortos y distintos
+                delay.delayTime(0.02 + i * 0.01);  // Retrasos cortos y distintos
                 delays.push(delay);
             }
 
@@ -185,8 +185,8 @@
                 this.y = y;
                 this.opacity = 255;
                 this.size = 20;  // Tamaño del punto de luz
-                this.glowSize = 60;  // Tamaño del resplandor de neón
-                this.color = color(255, 255, 150, this.opacity);  // Luz blanca/amarilla
+                this.glowSize = 40;  // Tamaño del resplandor de neón
+                this.color = color(255, 255, 240, this.opacity);  // Luz blanca/amarilla
             }
 
             display() {
