@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fluid Particle System with Enhanced Green Noise</title>
+    <meta charset="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Fluid Particle System with Green Noise and Light Effects</title>
     <style>
         body, html {
             margin: 0;
@@ -25,9 +24,8 @@
         let flowfield;
         let maxSpeed = 0.3;
         let audioStarted = false;
-        let globalReverb, noiseOscillator, lfo;
-
-        let erasePoint;
+        let globalReverb, noiseOscillator, lfo, lowPassFilter;
+        let touchPoints = [];
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
@@ -36,22 +34,20 @@
             flowfield = new Array(cols * rows);
 
             globalReverb = new p5.Reverb();
-            globalReverb.set(12, 8); 
+            globalReverb.set(20, 10);  // Reverberación profunda y amplia
 
-            // Configurar ruido verde más fuerte
+            // Configurar ruido verde con filtro de paso bajo
             noiseOscillator = new p5.Noise('pink');
-            let lowPassFilter = new p5.LowPass();
-            lowPassFilter.freq(500); 
+            lowPassFilter = new p5.LowPass();
+            lowPassFilter.freq(500);  // Filtro de paso bajo a 500 Hz
             noiseOscillator.disconnect();
             noiseOscillator.connect(lowPassFilter);
-
-            // Aumentar la amplitud base del ruido verde
-            noiseOscillator.amp(0.5, 1);  // Aumentar la amplitud inicial del ruido verde
+            noiseOscillator.amp(0.8);  // Aumentar el volumen del ruido verde
+            noiseOscillator.start();
 
             lfo = new p5.Oscillator('sine');
-            lfo.freq(random(1 / 7, 1 / 5)); 
-            lfo.disconnect();  
-            lfo.amp(0.8);  // Aumentar la amplitud del LFO para hacer el ruido verde mucho más notable
+            lfo.freq(random(1 / 6, 1 / 4));  // LFO entre 4 y 6 segundos
+            lfo.disconnect();
             lfo.start();
 
             for (let i = 0; i < 500; i++) {
@@ -64,7 +60,7 @@
         function draw() {
             if (!audioStarted) return;
 
-            background(0, 10); 
+            background(0, 10);  // Fondo negro con transparencia
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -85,39 +81,64 @@
                 particles[i].update();
                 particles[i].edges();
                 particles[i].show();
+            }
 
-                if (erasePoint && dist(erasePoint.x, erasePoint.y, particles[i].pos.x, particles[i].pos.y) < 50) {
-                    particles[i].pos = createVector(random(width), random(height)); 
+            // Dibujar el punto de luz y gestionar su desvanecimiento
+            for (let i = touchPoints.length - 1; i >= 0; i--) {
+                let t = touchPoints[i];
+                t.display();
+                t.fade();
+                if (t.opacity <= 0) {
+                    touchPoints.splice(i, 1);  // Eliminar si se desvanece completamente
                 }
             }
 
             zoff += 0.003;
 
-            // Ajustar la amplitud del ruido verde con LFO más notable
-            let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.3, 0.7);  // Aumentar el rango de amplitud para un mayor impacto
-            noiseOscillator.amp(noiseAmplitude, 0.6);  // Aplicar la amplitud al ruido verde
-
-            if (erasePoint) {
-                fill(0);
-                noStroke();
-                ellipse(erasePoint.x, erasePoint.y, 50);
-            }
+            // Modificar la amplitud del ruido verde con LFO
+            let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.6, 1);  // Aumentar la amplitud modulada del ruido
+            noiseOscillator.amp(noiseAmplitude, 0.5);  // Aplicar la amplitud modulada al ruido
         }
 
         function mousePressed() {
             if (!audioStarted) {
-                userStartAudio();  
+                userStartAudio();
                 audioStarted = true;
-                loop();  
+                loop();
             }
+
+            addTouchPoint(mouseX, mouseY);  // Generar un punto de luz y activar un oscilador
         }
 
-        function touchMoved() {
-            erasePoint = createVector(mouseX, mouseY);
+        function touchStarted() {
+            if (!audioStarted) {
+                userStartAudio();
+                audioStarted = true;
+                loop();
+            }
+
+            addTouchPoint(touchX, touchY);  // Generar un punto de luz y activar un oscilador
         }
 
-        function touchEnded() {
-            erasePoint = null; 
+        function addTouchPoint(x, y) {
+            let t = new TouchPoint(x, y);
+            touchPoints.push(t);
+
+            // Activar una nueva frecuencia cuando se toca la pantalla
+            let osc = new p5.Oscillator('sine');
+            osc.freq(random(200, 700));  // Frecuencia entre 200 y 700 Hz
+            osc.amp(0);
+            osc.start();
+            osc.disconnect();
+            osc.connect(globalReverb);  // Conectar a la reverb
+
+            osc.amp(0.5, 0.2);  // Fade in para la frecuencia
+            setTimeout(() => {
+                osc.amp(0, 2);  // Fade out suave después de 10 segundos
+                setTimeout(() => {
+                    osc.stop();  // Detener el oscilador
+                }, 2000);
+            }, 10000);
         }
 
         class Particle {
@@ -127,18 +148,6 @@
                 this.acc = createVector(0, 0);
                 this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
-
-                this.baseFreq = random(100, 7000);  
-                this.oscillator = new p5.Oscillator('sine');
-                this.oscillator.freq(this.baseFreq);
-                this.oscillator.amp(0);
-
-                this.oscillator.disconnect();
-                this.oscillator.connect(globalReverb);
-
-                this.shouldPlaySound = random(1) < 0.10;  
-                this.soundDuration = random(5000, 10000);  
-                this.nextSoundTime = millis() + random(3000, 10000);  
             }
 
             follow(vectors) {
@@ -158,31 +167,14 @@
                 this.vel.limit(this.maxSpeed);
                 this.pos.add(this.vel);
                 this.acc.mult(0);
-
-                let currentTime = millis();
-                if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
-                    this.oscillator.start();
-                    this.oscillator.amp(random(0.01, 0.02), 0.2);  // Reducir el volumen de los osciladores aún más
-                    setTimeout(() => {
-                        this.oscillator.amp(0.01, 0.2);  
-                        setTimeout(() => this.oscillator.stop(), 1000);  
-                    }, this.soundDuration - 1000);
-
-                    this.nextSoundTime = currentTime + random(3000, 10000);  
-                }
             }
 
             show() {
-                stroke(255, 50);  
-                strokeWeight(1);
+                stroke(255, 200, 0, 50);  // Colores cálidos y vibrantes
+                strokeWeight(1.5);
 
                 line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
                 this.prevPos = this.pos.copy();
-
-                noFill();
-                stroke(255, 20);
-                strokeWeight(3);
-                ellipse(this.pos.x, this.pos.y, 10);  
             }
 
             edges() {
@@ -194,7 +186,25 @@
             }
         }
 
-        noLoop();  
+        class TouchPoint {
+            constructor(x, y) {
+                this.pos = createVector(x, y);
+                this.size = 30;
+                this.opacity = 255;
+            }
+
+            display() {
+                noStroke();
+                fill(255, 255, 255, this.opacity);  // Luz blanca translúcida (neón)
+                ellipse(this.pos.x, this.pos.y, this.size);
+            }
+
+            fade() {
+                this.opacity -= 3;  // Se desvanece lentamente
+            }
+        }
+
+        noLoop();
     </script>
 </body>
 </html>
