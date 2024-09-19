@@ -72,7 +72,7 @@
 
             // Crear un oscilador espacializado
             spatialOscillator = new p5.Oscillator('sine');
-            spatialOscillator.freq(10);  // Frecuencia inicial
+            spatialOscillator.freq(440);  // Frecuencia inicial
             spatialOscillator.amp(0.1);   // Amplitud inicial baja
             spatialOscillator.pan(0);     // Centrado en los canales estéreo
             spatialOscillator.disconnect();
@@ -180,7 +180,7 @@
                 this.baseFreq = random(100, 7000);
                 this.oscillator = new p5.Oscillator('sine');
                 this.oscillator.freq(this.baseFreq);
-                this.oscillator.amp(0);
+                this.oscillator.amp(0);  // Amplitud inicial
 
                 this.oscillator.disconnect();
                 this.oscillator.connect(globalReverb);
@@ -211,10 +211,14 @@
                 let currentTime = millis();
                 if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
                     this.oscillator.start();
-                    this.oscillator.amp(random(0.01, 0.02), 0.2);
+
+                    // Modulación de amplitud del oscilador según la posición vertical
+                    let amplitudeMod = map(this.pos.y, height, 0, 0, 0.02);  // Amplitud más baja en la parte inferior y más alta en la parte superior
+                    this.oscillator.amp(amplitudeMod, 0.2);  // Transición suave para ajustar la amplitud
+
                     setTimeout(() => {
-                        this.oscillator.amp(0.01, 0.2);
-                        setTimeout(() => this.oscillator.stop(), 1000);
+                        this.oscillator.amp(0.01, 0.2);  // Reducir suavemente el volumen
+                        setTimeout(() => this.oscillator.stop(), 1000);  
                     }, this.soundDuration - 1000);
 
                     this.nextSoundTime = currentTime + random(3000, 10000);
