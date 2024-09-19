@@ -66,7 +66,7 @@
             envelope.setADSR(0.1, 0.3, 0.2, 0.5);  // Suavidad en la envolvente
             envelope.setRange(0.1, 0);  // Amplitud máxima más baja
 
-            noiseOscillator.amp(0);  // Controlado por el envelope
+            noiseOscillator.amp(0.2);  // Valor inicial suave del ruido blanco
             noiseOscillator.start();
 
             // LFO para modular el ruido
@@ -141,9 +141,9 @@
 
         function touchMoved() {
             erasePoint = createVector(mouseX, mouseY);
-            // Modificar la amplitud del ruido blanco según la posición del touch
-            let amplitudeMod = map(mouseY, 0, height, 0, 1);  // Ahora se modula desde 0 hasta 1 para hacerla más extrema
-            noiseOscillator.amp(amplitudeMod, 0.1);  // Cambiar la amplitud con una transición suave pero con más impacto
+            // Modificar la amplitud del ruido blanco con el touch para reducir el volumen casi al silencio
+            let amplitudeMod = map(mouseY, 0, height, 0, 0.05);  // Modulación más extrema hacia el silencio
+            noiseOscillator.amp(amplitudeMod, 0.1);  // Transición suave, pero bajando la amplitud drásticamente
         }
 
         function touchEnded() {
