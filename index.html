@@ -2,7 +2,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Art&Psique®aprtlt</title>
+    <title>Fluid Particle System with Enhanced Green Noise</title>
     <style>
         body, html {
             margin: 0;
@@ -26,7 +26,7 @@
         let audioStarted = false;
         let globalReverb, noiseOscillator, lfo;
         let erasePoint;
-        let compressor; // Añadimos el compresor
+        let compressor;
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
@@ -35,31 +35,28 @@
             flowfield = new Array(cols * rows);
 
             globalReverb = new p5.Reverb();
-            globalReverb.set(20, 10); // Reverberación más amplia (decay de 20s, damp más notable)
+            globalReverb.set(20, 10); 
 
-            // Crear compresor para controlar saturación
             compressor = new p5.Compressor();
-            compressor.threshold(-20);  // Umbral para comenzar la compresión
-            compressor.ratio(4);  // Relación de compresión moderada
-            compressor.attack(0.05);  // Tiempo de ataque rápido
-            compressor.release(0.1);  // Tiempo de liberación rápido para evitar saturación
+            compressor.threshold(-20); 
+            compressor.ratio(4);  
+            compressor.attack(0.05);  
+            compressor.release(0.1); 
 
-            // Configurar ruido verde más fuerte con compresión
             noiseOscillator = new p5.Noise('pink');
             let lowPassFilter = new p5.LowPass();
             lowPassFilter.freq(500);
             noiseOscillator.disconnect();
             noiseOscillator.connect(lowPassFilter);
-            lowPassFilter.connect(compressor);  // Conectar el filtro al compresor
-            compressor.connect(globalReverb);  // Conectar el compresor a la reverb
+            lowPassFilter.connect(compressor);  
+            compressor.connect(globalReverb);  
 
-            // Reducir la ganancia para evitar saturación en móviles
-            noiseOscillator.amp(0.2, 1);  // Ajuste inicial de amplitud
+            noiseOscillator.amp(0.2, 1);  
 
             lfo = new p5.Oscillator('sine');
             lfo.freq(random(1 / 7, 1 / 5));
             lfo.disconnect();
-            lfo.amp(0.4);  // Amplitud reducida para evitar saturación
+            lfo.amp(0.4);  
             lfo.start();
 
             for (let i = 0; i < 500; i++) {
@@ -103,7 +100,7 @@
 
             // Ajustar la amplitud del ruido verde con LFO más notable
             let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.1, 0.3);
-            noiseOscillator.amp(noiseAmplitude, 0.6);  // Aplicar la amplitud suavizada
+            noiseOscillator.amp(noiseAmplitude, 0.6);  
 
             if (erasePoint) {
                 fill(0);
@@ -116,13 +113,16 @@
             if (!audioStarted) {
                 userStartAudio();
                 audioStarted = true;
-                noiseOscillator.start();  // Iniciar ruido verde
+                noiseOscillator.start();  
                 loop();
             }
         }
 
         function touchMoved() {
             erasePoint = createVector(mouseX, mouseY);
+            // Modificar la amplitud del ruido verde según la posición del touch
+            let amplitudeMod = map(mouseY, 0, height, 0, 1);  // Mapea la posición Y del toque a la amplitud
+            noiseOscillator.amp(amplitudeMod, 0.1);  // Cambiar la amplitud con un tiempo de transición suave
         }
 
         function touchEnded() {
@@ -207,7 +207,6 @@
     </script>
 </body>
 </html>
-
 
 
 
