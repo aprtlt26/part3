@@ -2,7 +2,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fluid Particle System with Enhanced Green Noise</title>
+    <title>Art&Psique®aprtlt</title>
     <style>
         body, html {
             margin: 0;
@@ -25,8 +25,8 @@
         let maxSpeed = 0.3;
         let audioStarted = false;
         let globalReverb, noiseOscillator, lfo;
-
         let erasePoint;
+        let compressor; // Añadimos el compresor
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
@@ -35,23 +35,31 @@
             flowfield = new Array(cols * rows);
 
             globalReverb = new p5.Reverb();
-            globalReverb.set(12, 8);
+            globalReverb.set(20, 10); // Reverberación más amplia (decay de 20s, damp más notable)
 
-            // Configurar ruido verde más fuerte con menor ganancia para evitar saturación
+            // Crear compresor para controlar saturación
+            compressor = new p5.Compressor();
+            compressor.threshold(-20);  // Umbral para comenzar la compresión
+            compressor.ratio(4);  // Relación de compresión moderada
+            compressor.attack(0.05);  // Tiempo de ataque rápido
+            compressor.release(0.1);  // Tiempo de liberación rápido para evitar saturación
+
+            // Configurar ruido verde más fuerte con compresión
             noiseOscillator = new p5.Noise('pink');
             let lowPassFilter = new p5.LowPass();
-            lowPassFilter.freq(500); 
+            lowPassFilter.freq(500);
             noiseOscillator.disconnect();
             noiseOscillator.connect(lowPassFilter);
+            lowPassFilter.connect(compressor);  // Conectar el filtro al compresor
+            compressor.connect(globalReverb);  // Conectar el compresor a la reverb
 
             // Reducir la ganancia para evitar saturación en móviles
-            noiseOscillator.amp(0.2, 1);  // Reducir la amplitud inicial del ruido verde
+            noiseOscillator.amp(0.2, 1);  // Ajuste inicial de amplitud
 
             lfo = new p5.Oscillator('sine');
-            lfo.freq(random(1 / 7, 1 / 5)); 
-            lfo.disconnect();  
-            lfo.amp(0.4);  // Reducir la amplitud del LFO para evitar picos
-
+            lfo.freq(random(1 / 7, 1 / 5));
+            lfo.disconnect();
+            lfo.amp(0.4);  // Amplitud reducida para evitar saturación
             lfo.start();
 
             for (let i = 0; i < 500; i++) {
@@ -94,8 +102,8 @@
             zoff += 0.003;
 
             // Ajustar la amplitud del ruido verde con LFO más notable
-            let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.1, 0.3);  // Rango ajustado para mayor suavidad
-            noiseOscillator.amp(noiseAmplitude, 0.6);
+            let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.1, 0.3);
+            noiseOscillator.amp(noiseAmplitude, 0.6);  // Aplicar la amplitud suavizada
 
             if (erasePoint) {
                 fill(0);
@@ -106,9 +114,10 @@
 
         function mousePressed() {
             if (!audioStarted) {
-                userStartAudio();  
+                userStartAudio();
                 audioStarted = true;
-                loop();  
+                noiseOscillator.start();  // Iniciar ruido verde
+                loop();
             }
         }
 
@@ -117,7 +126,7 @@
         }
 
         function touchEnded() {
-            erasePoint = null; 
+            erasePoint = null;
         }
 
         class Particle {
@@ -128,7 +137,7 @@
                 this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
 
-                this.baseFreq = random(100, 7000);  
+                this.baseFreq = random(100, 7000);
                 this.oscillator = new p5.Oscillator('sine');
                 this.oscillator.freq(this.baseFreq);
                 this.oscillator.amp(0);
@@ -136,9 +145,9 @@
                 this.oscillator.disconnect();
                 this.oscillator.connect(globalReverb);
 
-                this.shouldPlaySound = random(1) < 0.10;  
-                this.soundDuration = random(5000, 10000);  
-                this.nextSoundTime = millis() + random(3000, 10000);  
+                this.shouldPlaySound = random(1) < 0.10;
+                this.soundDuration = random(5000, 10000);
+                this.nextSoundTime = millis() + random(3000, 10000);
             }
 
             follow(vectors) {
@@ -162,10 +171,10 @@
                 let currentTime = millis();
                 if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
                     this.oscillator.start();
-                    this.oscillator.amp(random(0.01, 0.02), 0.2);  // Mantener el volumen bajo
+                    this.oscillator.amp(random(0.01, 0.02), 0.2);
                     setTimeout(() => {
-                        this.oscillator.amp(0.01, 0.2);  
-                        setTimeout(() => this.oscillator.stop(), 1000);  
+                        this.oscillator.amp(0.01, 0.2);
+                        setTimeout(() => this.oscillator.stop(), 1000);
                     }, this.soundDuration - 1000);
 
                     this.nextSoundTime = currentTime + random(3000, 10000);
@@ -173,7 +182,7 @@
             }
 
             show() {
-                stroke(255, 50);  
+                stroke(255, 50);
                 strokeWeight(1);
 
                 line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
@@ -182,7 +191,7 @@
                 noFill();
                 stroke(255, 20);
                 strokeWeight(3);
-                ellipse(this.pos.x, this.pos.y, 10);  
+                ellipse(this.pos.x, this.pos.y, 10);
             }
 
             edges() {
@@ -198,6 +207,7 @@
     </script>
 </body>
 </html>
+
 
 
 
