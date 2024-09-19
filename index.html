@@ -35,6 +35,7 @@
         let envelope;
         let pulseInterval = 5000;  // Intervalo de pulsación en milisegundos (5 segundos)
         let spatialOscillator;
+        let frequencyLFO;
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
@@ -70,14 +71,21 @@
             noiseOscillator.amp(0.05);  // Amplitud mucho más baja para suavizar el ruido
             noiseOscillator.start();
 
-            // Crear un oscilador espacializado
+            // Crear un oscilador que oscila entre 8 y 12 Hz
             spatialOscillator = new p5.Oscillator('sine');
-            spatialOscillator.freq(440);  // Frecuencia inicial
+            spatialOscillator.freq(440);  // Frecuencia base
             spatialOscillator.amp(0.1);   // Amplitud inicial baja
             spatialOscillator.pan(0);     // Centrado en los canales estéreo
             spatialOscillator.disconnect();
             spatialOscillator.connect(globalReverb);
             spatialOscillator.start();
+
+            // LFO para modular la frecuencia entre 8 y 12 Hz
+            frequencyLFO = new p5.Oscillator('sine');
+            frequencyLFO.freq(0.2);  // Oscilación lenta
+            frequencyLFO.amp(2);     // Amplitud de 2 Hz, ajustando la frecuencia entre 8 y 12 Hz
+            frequencyLFO.disconnect();
+            frequencyLFO.start();
 
             // LFO para modular el ruido
             lfo = new p5.Oscillator('sine');
@@ -133,6 +141,10 @@
             // Ajustar la amplitud del ruido con LFO más notable y suavizado
             let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.01, 0.03);  // Mucho más suave
             noiseOscillator.amp(noiseAmplitude, 0.6);  // Aplicar la amplitud suavizada
+
+            // Ajustar la frecuencia del oscilador entre 8 y 12 Hz con el LFO
+            let freqMod = map(frequencyLFO.getAmp(), -1, 1, 8, 12);  // Modulación entre 8 y 12 Hz
+            spatialOscillator.freq(freqMod);
 
             if (erasePoint) {
                 fill(0);
@@ -212,8 +224,8 @@
                 if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
                     this.oscillator.start();
 
-                    // Modulación de amplitud del oscilador según la posición vertical
-                    let amplitudeMod = map(this.pos.y, height, 0, 0, 0.02);  // Amplitud más baja en la parte inferior y más alta en la parte superior
+                    // Modulación de amplitud del oscilador según la posición vertical del touch
+                    let amplitudeMod = map(mouseY, height, 0, 0, 0.02);  // Amplitud más baja en la parte inferior y más alta en la parte superior
                     this.oscillator.amp(amplitudeMod, 0.2);  // Transición suave para ajustar la amplitud
 
                     setTimeout(() => {
@@ -251,5 +263,4 @@
     </script>
 </body>
 </html>
-
 
