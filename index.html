@@ -25,8 +25,8 @@
         let maxSpeed = 0.3;
         let audioStarted = false;
         let globalReverb, noiseOscillator, lfo;
-        let compressor; // Añadir el compresor
         let erasePoint;
+        let compressor; // Añadimos el compresor
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
@@ -37,14 +37,14 @@
             globalReverb = new p5.Reverb();
             globalReverb.set(12, 8);
 
-            // Crear el compresor
+            // Creamos el compresor
             compressor = new p5.Compressor();
-            compressor.threshold(-30);  // Nivel en que comienza a comprimir
-            compressor.ratio(5);  // Relación de compresión
-            compressor.attack(0.01);  // Tiempo para aplicar la compresión
-            compressor.release(0.1);  // Tiempo para liberar la compresión
+            compressor.threshold(-20);  // Ajustar el nivel en que empieza la compresión
+            compressor.ratio(4);  // Relación de compresión moderada
+            compressor.attack(0.05);  // Tiempo de ataque para suavizar el sonido
+            compressor.release(0.2);  // Tiempo de liberación para evitar saturación
 
-            // Configurar ruido verde más fuerte
+            // Configurar el ruido verde más fuerte
             noiseOscillator = new p5.Noise('pink');
             let lowPassFilter = new p5.LowPass();
             lowPassFilter.freq(500);
@@ -53,12 +53,12 @@
             lowPassFilter.connect(compressor);  // Conectar el filtro al compresor
 
             // Aumentar la amplitud base del ruido verde
-            noiseOscillator.amp(0.5, 1);
+            noiseOscillator.amp(0.5, 1);  // Aumentar la amplitud inicial del ruido verde
 
             lfo = new p5.Oscillator('sine');
             lfo.freq(random(1 / 7, 1 / 5));
             lfo.disconnect();
-            lfo.amp(0.8);
+            lfo.amp(0.8);  // Aumentar la amplitud del LFO para hacer el ruido verde más notable
             lfo.start();
 
             for (let i = 0; i < 500; i++) {
@@ -101,8 +101,8 @@
             zoff += 0.003;
 
             // Ajustar la amplitud del ruido verde con LFO más notable
-            let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.3, 0.7);
-            noiseOscillator.amp(noiseAmplitude, 0.6);
+            let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.3, 0.7); 
+            noiseOscillator.amp(noiseAmplitude, 0.6); 
 
             if (erasePoint) {
                 fill(0);
@@ -113,9 +113,9 @@
 
         function mousePressed() {
             if (!audioStarted) {
-                userStartAudio();
+                userStartAudio();  
                 audioStarted = true;
-                noiseOscillator.start();  // Iniciar el ruido verde
+                noiseOscillator.start(); 
                 loop();
             }
         }
@@ -145,9 +145,9 @@
                 this.oscillator.connect(globalReverb);
                 globalReverb.connect(compressor);  // Conectar el reverb al compresor
 
-                this.shouldPlaySound = random(1) < 0.10;
-                this.soundDuration = random(5000, 10000);
-                this.nextSoundTime = millis() + random(3000, 10000);
+                this.shouldPlaySound = random(1) < 0.10;  
+                this.soundDuration = random(5000, 10000);  
+                this.nextSoundTime = millis() + random(3000, 10000);  
             }
 
             follow(vectors) {
@@ -203,7 +203,7 @@
             }
         }
 
-        noLoop();
+        noLoop();  
     </script>
 </body>
 </html>
