@@ -2,7 +2,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fluid Particle System with Enhanced White Noise</title>
+    <title>Fluid Particle System with Enhanced Sound Modulation</title>
     <style>
         body, html {
             margin: 0;
@@ -34,6 +34,7 @@
         let compressor;
         let envelope;
         let pulseInterval = 5000;  // Intervalo de pulsación en milisegundos (5 segundos)
+        let spatialOscillator;
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
@@ -68,6 +69,15 @@
 
             noiseOscillator.amp(0.05);  // Amplitud mucho más baja para suavizar el ruido
             noiseOscillator.start();
+
+            // Crear un oscilador espacializado
+            spatialOscillator = new p5.Oscillator('sine');
+            spatialOscillator.freq(440);  // Frecuencia inicial
+            spatialOscillator.amp(0.1);   // Amplitud inicial baja
+            spatialOscillator.pan(0);     // Centrado en los canales estéreo
+            spatialOscillator.disconnect();
+            spatialOscillator.connect(globalReverb);
+            spatialOscillator.start();
 
             // LFO para modular el ruido
             lfo = new p5.Oscillator('sine');
@@ -141,9 +151,18 @@
 
         function touchMoved() {
             erasePoint = createVector(mouseX, mouseY);
+
             // Modificar la amplitud del ruido blanco con el touch para reducir el volumen casi al silencio
             let amplitudeMod = map(mouseY, 0, height, 0, 0.02);  // Modulación extrema hacia el silencio
             noiseOscillator.amp(amplitudeMod, 0.1);  // Transición suave, pero bajando la amplitud drásticamente
+
+            // Espacialización del oscilador basado en la posición horizontal (touchX)
+            let panValue = map(mouseX, 0, width, -1, 1);  // Mover el sonido entre el canal izquierdo (-1) y derecho (1)
+            spatialOscillator.pan(panValue);
+
+            // Modular la amplitud del oscilador según la posición vertical (touchY)
+            let spatialAmp = map(mouseY, 0, height, 0.02, 0.3);  // Amplitud más baja a más alta
+            spatialOscillator.amp(spatialAmp, 0.1);  // Transición suave para la amplitud
         }
 
         function touchEnded() {
@@ -228,8 +247,5 @@
     </script>
 </body>
 </html>
-
-
-
 
 
