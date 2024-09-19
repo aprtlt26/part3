@@ -41,31 +41,35 @@
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
 
+            // Reverberación con mayor suavidad
             globalReverb = new p5.Reverb();
             globalReverb.set(20, 10); 
 
+            // Compresor para controlar los picos
             compressor = new p5.Compressor();
-            compressor.threshold(-20); 
+            compressor.threshold(-40);  // Umbral más bajo para reducir la ganancia general
             compressor.ratio(4);  
             compressor.attack(0.05);  
             compressor.release(0.1); 
 
-            // Configurar ruido verde con compresión y suavidad
+            // Configurar ruido blanco con filtro pasa bajos a 500Hz
             noiseOscillator = new p5.Noise('pink');
             let lowPassFilter = new p5.LowPass();
-            lowPassFilter.freq(500);
+            lowPassFilter.freq(500);  // Filtro pasa bajos a 500 Hz para suavizar el ruido
             noiseOscillator.disconnect();
             noiseOscillator.connect(lowPassFilter);
             lowPassFilter.connect(compressor);
             compressor.connect(globalReverb);
 
+            // Crear un envelope para modular la amplitud del ruido
             envelope = new p5.Envelope();
-            envelope.setADSR(0.1, 0.3, 0.2, 0.5); // Envolvente para suavizar la entrada/salida del sonido
-            envelope.setRange(0.2, 0);  // Amplitud máxima y mínima del ruido
+            envelope.setADSR(0.1, 0.3, 0.2, 0.5);  // Suavidad en la envolvente
+            envelope.setRange(0.1, 0);  // Amplitud máxima más baja
 
-            noiseOscillator.amp(0);  // Se controlará con el envelope
+            noiseOscillator.amp(0);  // Controlado por el envelope
             noiseOscillator.start();
 
+            // LFO para modular el ruido
             lfo = new p5.Oscillator('sine');
             lfo.freq(random(1 / 7, 1 / 5));
             lfo.disconnect();
@@ -78,9 +82,9 @@
 
             background(0);
 
-            // Hacer que el ruido pulse cada 4-5 segundos
+            // Hacer que el ruido pulse suavemente cada 4-5 segundos
             setInterval(() => {
-                envelope.play(noiseOscillator, 0, 0.1);  // El ruido pulsará suavemente cada intervalo
+                envelope.play(noiseOscillator, 0, 0.1);  // Ruido pulsado suavemente cada intervalo
             }, pulseInterval);
         }
 
@@ -116,8 +120,9 @@
 
             zoff += 0.003;
 
-            let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.1, 0.3);
-            noiseOscillator.amp(noiseAmplitude, 0.6);
+            // Ajustar la amplitud del ruido verde con LFO más notable
+            let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.05, 0.15);  // Rango ajustado para mayor suavidad
+            noiseOscillator.amp(noiseAmplitude, 0.6);  // Aplicar la amplitud suavizada
 
             if (erasePoint) {
                 fill(0);
@@ -136,8 +141,9 @@
 
         function touchMoved() {
             erasePoint = createVector(mouseX, mouseY);
-            let amplitudeMod = map(mouseY, 0, height, 0, 1);
-            noiseOscillator.amp(amplitudeMod, 0.1);
+            // Modificar la amplitud del ruido blanco según la posición del touch
+            let amplitudeMod = map(mouseY, 0, height, 0, 0.3);  // Más sensibilidad con menor ganancia
+            noiseOscillator.amp(amplitudeMod, 0.1);  // Cambiar la amplitud con una transición suave
         }
 
         function touchEnded() {
