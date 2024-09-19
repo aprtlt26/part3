@@ -214,28 +214,32 @@
                 this.acc.add(force);
             }
 
-            update() {
-                this.vel.add(this.acc);
-                this.vel.limit(this.maxSpeed);
-                this.pos.add(this.vel);
-                this.acc.mult(0);
+           update() {
+    this.vel.add(this.acc);
+    this.vel.limit(this.maxSpeed);
+    this.pos.add(this.vel);
+    this.acc.mult(0);
 
-                let currentTime = millis();
-                if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
-                    this.oscillator.start();
+    let currentTime = millis();
+    if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
+        this.oscillator.start();
 
-                    // Modulación de amplitud del oscilador según la posición vertical del touch
-                    let amplitudeMod = map(mouseY, height, 0, 0, 0.02);  // Amplitud más baja en la parte inferior y más alta en la parte superior
-                    this.oscillator.amp(amplitudeMod, 0.2);  // Transición suave para ajustar la amplitud
+        // Modulación de la frecuencia con el touch
+        let frequencyMod = map(mouseY, 0, height, 100, 2000);  // Ajusta este rango según lo que necesites
+        this.oscillator.freq(frequencyMod);  // Modula la frecuencia
 
-                    setTimeout(() => {
-                        this.oscillator.amp(0.01, 0.2);  // Reducir suavemente el volumen
-                        setTimeout(() => this.oscillator.stop(), 1000);  
-                    }, this.soundDuration - 1000);
+        let amplitudeMod = map(mouseY, height, 0, 0, 0.02);  // Modulación de la amplitud
+        this.oscillator.amp(amplitudeMod, 0.2);  // Aplicar la modulación de amplitud
 
-                    this.nextSoundTime = currentTime + random(3000, 10000);
-                }
-            }
+        setTimeout(() => {
+            this.oscillator.amp(0.01, 0.2);  // Reducir suavemente el volumen
+            setTimeout(() => this.oscillator.stop(), 1000);  
+        }, this.soundDuration - 1000);
+
+        this.nextSoundTime = currentTime + random(3000, 10000);
+    }
+}
+
 
             show() {
                 stroke(255, 50);
