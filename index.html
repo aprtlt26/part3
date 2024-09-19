@@ -25,8 +25,8 @@
         let maxSpeed = 0.3;
         let audioStarted = false;
         let globalReverb, noiseOscillator, lfo;
+
         let erasePoint;
-        let compressor; // Añadimos el compresor
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
@@ -37,28 +37,21 @@
             globalReverb = new p5.Reverb();
             globalReverb.set(12, 8);
 
-            // Creamos el compresor
-            compressor = new p5.Compressor();
-            compressor.threshold(-20);  // Ajustar el nivel en que empieza la compresión
-            compressor.ratio(4);  // Relación de compresión moderada
-            compressor.attack(0.05);  // Tiempo de ataque para suavizar el sonido
-            compressor.release(0.2);  // Tiempo de liberación para evitar saturación
-
-            // Configurar el ruido verde más fuerte
+            // Configurar ruido verde más fuerte con menor ganancia para evitar saturación
             noiseOscillator = new p5.Noise('pink');
             let lowPassFilter = new p5.LowPass();
-            lowPassFilter.freq(500);
+            lowPassFilter.freq(500); 
             noiseOscillator.disconnect();
             noiseOscillator.connect(lowPassFilter);
-            lowPassFilter.connect(compressor);  // Conectar el filtro al compresor
 
-            // Aumentar la amplitud base del ruido verde
-            noiseOscillator.amp(0.5, 1);  // Aumentar la amplitud inicial del ruido verde
+            // Reducir la ganancia para evitar saturación en móviles
+            noiseOscillator.amp(0.2, 1);  // Reducir la amplitud inicial del ruido verde
 
             lfo = new p5.Oscillator('sine');
-            lfo.freq(random(1 / 7, 1 / 5));
-            lfo.disconnect();
-            lfo.amp(0.8);  // Aumentar la amplitud del LFO para hacer el ruido verde más notable
+            lfo.freq(random(1 / 7, 1 / 5)); 
+            lfo.disconnect();  
+            lfo.amp(0.4);  // Reducir la amplitud del LFO para evitar picos
+
             lfo.start();
 
             for (let i = 0; i < 500; i++) {
@@ -101,8 +94,8 @@
             zoff += 0.003;
 
             // Ajustar la amplitud del ruido verde con LFO más notable
-            let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.3, 0.7); 
-            noiseOscillator.amp(noiseAmplitude, 0.6); 
+            let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.1, 0.3);  // Rango ajustado para mayor suavidad
+            noiseOscillator.amp(noiseAmplitude, 0.6);
 
             if (erasePoint) {
                 fill(0);
@@ -115,8 +108,7 @@
             if (!audioStarted) {
                 userStartAudio();  
                 audioStarted = true;
-                noiseOscillator.start(); 
-                loop();
+                loop();  
             }
         }
 
@@ -125,7 +117,7 @@
         }
 
         function touchEnded() {
-            erasePoint = null;
+            erasePoint = null; 
         }
 
         class Particle {
@@ -136,14 +128,13 @@
                 this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
 
-                this.baseFreq = random(100, 7000);
+                this.baseFreq = random(100, 7000);  
                 this.oscillator = new p5.Oscillator('sine');
                 this.oscillator.freq(this.baseFreq);
                 this.oscillator.amp(0);
 
                 this.oscillator.disconnect();
                 this.oscillator.connect(globalReverb);
-                globalReverb.connect(compressor);  // Conectar el reverb al compresor
 
                 this.shouldPlaySound = random(1) < 0.10;  
                 this.soundDuration = random(5000, 10000);  
@@ -171,10 +162,10 @@
                 let currentTime = millis();
                 if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
                     this.oscillator.start();
-                    this.oscillator.amp(random(0.01, 0.02), 0.2);
+                    this.oscillator.amp(random(0.01, 0.02), 0.2);  // Mantener el volumen bajo
                     setTimeout(() => {
-                        this.oscillator.amp(0.01, 0.2);
-                        setTimeout(() => this.oscillator.stop(), 1000);
+                        this.oscillator.amp(0.01, 0.2);  
+                        setTimeout(() => this.oscillator.stop(), 1000);  
                     }, this.soundDuration - 1000);
 
                     this.nextSoundTime = currentTime + random(3000, 10000);
@@ -182,7 +173,7 @@
             }
 
             show() {
-                stroke(255, 50);
+                stroke(255, 50);  
                 strokeWeight(1);
 
                 line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
@@ -191,7 +182,7 @@
                 noFill();
                 stroke(255, 20);
                 strokeWeight(3);
-                ellipse(this.pos.x, this.pos.y, 10);
+                ellipse(this.pos.x, this.pos.y, 10);  
             }
 
             edges() {
@@ -203,7 +194,7 @@
             }
         }
 
-        noLoop();  
+        noLoop();
     </script>
 </body>
 </html>
