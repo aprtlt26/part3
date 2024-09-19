@@ -142,8 +142,8 @@
         function touchMoved() {
             erasePoint = createVector(mouseX, mouseY);
             // Modificar la amplitud del ruido blanco según la posición del touch
-            let amplitudeMod = map(mouseY, 0, height, 0, 0.3);  // Más sensibilidad con menor ganancia
-            noiseOscillator.amp(amplitudeMod, 0.1);  // Cambiar la amplitud con una transición suave
+            let amplitudeMod = map(mouseY, 0, height, 0, 1);  // Ahora se modula desde 0 hasta 1 para hacerla más extrema
+            noiseOscillator.amp(amplitudeMod, 0.1);  // Cambiar la amplitud con una transición suave pero con más impacto
         }
 
         function touchEnded() {
