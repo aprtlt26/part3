@@ -7,8 +7,13 @@
         body, html {
             margin: 0;
             padding: 0;
-            overflow: none;
+            overflow: hidden;
             background: black;
+        }
+
+        /* Desactivar el comportamiento de desplazamiento en móviles */
+        body {
+            touch-action: none;
         }
     </style>
 </head>
@@ -27,6 +32,8 @@
         let globalReverb, noiseOscillator, lfo;
         let erasePoint;
         let compressor;
+        let envelope;
+        let pulseInterval = 5000;  // Intervalo de pulsación en milisegundos (5 segundos)
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
@@ -43,20 +50,26 @@
             compressor.attack(0.05);  
             compressor.release(0.1); 
 
+            // Configurar ruido verde con compresión y suavidad
             noiseOscillator = new p5.Noise('pink');
             let lowPassFilter = new p5.LowPass();
             lowPassFilter.freq(500);
             noiseOscillator.disconnect();
             noiseOscillator.connect(lowPassFilter);
-            lowPassFilter.connect(compressor);  
-            compressor.connect(globalReverb);  
+            lowPassFilter.connect(compressor);
+            compressor.connect(globalReverb);
 
-            noiseOscillator.amp(0.2, 1);  
+            envelope = new p5.Envelope();
+            envelope.setADSR(0.1, 0.3, 0.2, 0.5); // Envolvente para suavizar la entrada/salida del sonido
+            envelope.setRange(0.2, 0);  // Amplitud máxima y mínima del ruido
+
+            noiseOscillator.amp(0);  // Se controlará con el envelope
+            noiseOscillator.start();
 
             lfo = new p5.Oscillator('sine');
             lfo.freq(random(1 / 7, 1 / 5));
             lfo.disconnect();
-            lfo.amp(0.4);  
+            lfo.amp(0.4);
             lfo.start();
 
             for (let i = 0; i < 500; i++) {
@@ -64,6 +77,11 @@
             }
 
             background(0);
+
+            // Hacer que el ruido pulse cada 4-5 segundos
+            setInterval(() => {
+                envelope.play(noiseOscillator, 0, 0.1);  // El ruido pulsará suavemente cada intervalo
+            }, pulseInterval);
         }
 
         function draw() {
@@ -98,9 +116,8 @@
 
             zoff += 0.003;
 
-            // Ajustar la amplitud del ruido verde con LFO más notable
             let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.1, 0.3);
-            noiseOscillator.amp(noiseAmplitude, 0.6);  
+            noiseOscillator.amp(noiseAmplitude, 0.6);
 
             if (erasePoint) {
                 fill(0);
@@ -113,16 +130,14 @@
             if (!audioStarted) {
                 userStartAudio();
                 audioStarted = true;
-                noiseOscillator.start();  
                 loop();
             }
         }
 
         function touchMoved() {
             erasePoint = createVector(mouseX, mouseY);
-            // Modificar la amplitud del ruido verde según la posición del touch
-            let amplitudeMod = map(mouseY, 0, height, 0, 1);  // Mapea la posición Y del toque a la amplitud
-            noiseOscillator.amp(amplitudeMod, 0.1);  // Cambiar la amplitud con un tiempo de transición suave
+            let amplitudeMod = map(mouseY, 0, height, 0, 1);
+            noiseOscillator.amp(amplitudeMod, 0.1);
         }
 
         function touchEnded() {
