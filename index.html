@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Flowfield Sonoro</title>
+    <title>A-prtlt-neuroacústica</title>
     <style>
         * {
             margin: 0;
@@ -31,7 +31,6 @@
             cursor: crosshair;
         }
         
-        /* Control de volumen minimalista - NO altera la estética original */
         .audio-controls {
             position: fixed;
             top: 20px;
@@ -151,7 +150,6 @@
     <div class="start-hint" id="startHint">🎧 Toca la pantalla para comenzar</div>
 
     <script>
-        // ========== TU CÓDIGO ORIGINAL COMPLETO (sin cambios visuales ni arquitectónicos) ==========
         let inc = 0.05;
         let scl = 10;
         let cols, rows;
@@ -168,7 +166,6 @@
         let spatialOscillator;
         let frequencyLFO;
         
-        // SOLO AGREGADO: variables para el control de volumen (no afectan tu lógica)
         let masterVolume = 0.3;
         let isMuted = false;
         
@@ -232,7 +229,6 @@
                 envelope.play(noiseOscillator, 0, 0.01);
             }, pulseInterval);
             
-            // Configurar controles de volumen (SOLO AGREGADO, no modifica tu código)
             setupVolumeControls();
         }
         
@@ -288,7 +284,6 @@
             }
         }
 
-        // ===== TU DRAW ORIGINAL COMPLETO (sin cambios) =====
         function draw() {
             if (!audioStarted) return;
 
@@ -334,7 +329,6 @@
             }
         }
 
-        // ===== TU MOUSEPRESSED ORIGINAL =====
         function mousePressed() {
             if (!audioStarted) {
                 userStartAudio();
@@ -348,7 +342,6 @@
             }
         }
 
-        // ===== TU TOUCHMOVED ORIGINAL (con volumen aplicado) =====
         function touchMoved() {
             erasePoint = createVector(mouseX, mouseY);
 
@@ -366,7 +359,6 @@
             erasePoint = null;
         }
 
-        // ===== TU CLASE PARTICLE ORIGINAL COMPLETA (solo agregué currentOscAmp para volumen) =====
         class Particle {
             constructor() {
                 this.pos = createVector(random(width), random(height));
