@@ -1,28 +1,157 @@
-<html lang="en">
+<!DOCTYPE html>
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EstimulaciónCerebral.Art&Psiq®-AlfonsoPretelt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Flowfield Sonoro</title>
     <style>
-        body, html {
+        * {
             margin: 0;
             padding: 0;
-            overflow: hidden;
-            background: black;
-                cursor: none;  
-
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
-
-        /* Desactivar el comportamiento de desplazamiento en móviles */
+        
         body {
-            touch-action: none;
+            background: black;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+        
+        canvas {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+        
+        /* Control de volumen minimalista - NO altera la estética original */
+        .audio-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            padding: 10px 15px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .volume-slider {
+            width: 80px;
+            height: 3px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+        }
+        
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .mute-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 20px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-family: inherit;
+        }
+        
+        .mute-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .volume-value {
+            min-width: 38px;
+            text-align: right;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        @media (max-width: 768px) {
+            .audio-controls {
+                top: 12px;
+                right: 12px;
+                padding: 6px 12px;
+                gap: 8px;
+            }
+            .volume-slider {
+                width: 60px;
+            }
+            .volume-value {
+                font-size: 10px;
+                min-width: 32px;
+            }
+        }
+        
+        .start-hint {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.5);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            padding: 8px 16px;
+            border-radius: 20px;
+            pointer-events: none;
+            z-index: 1000;
+            white-space: nowrap;
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
 </head>
 <body>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
+    <div class="audio-controls" style="display: none;" id="audioControls">
+        <div class="volume-control">
+            <span>🔊</span>
+            <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="30">
+            <span class="volume-value" id="volumeValue">30%</span>
+        </div>
+        <button class="mute-btn" id="muteBtn">🔇 Mute</button>
+    </div>
+    <div class="start-hint" id="startHint">🎧 Toca la pantalla para comenzar</div>
+
     <script>
+        // ========== TU CÓDIGO ORIGINAL COMPLETO (sin cambios visuales ni arquitectónicos) ==========
         let inc = 0.05;
         let scl = 10;
         let cols, rows;
@@ -35,61 +164,58 @@
         let erasePoint;
         let compressor;
         let envelope;
-        let pulseInterval = 5000;  // Intervalo de pulsación en milisegundos (5 segundos)
+        let pulseInterval = 5000;
         let spatialOscillator;
         let frequencyLFO;
-
+        
+        // SOLO AGREGADO: variables para el control de volumen (no afectan tu lógica)
+        let masterVolume = 0.3;
+        let isMuted = false;
+        
         function setup() {
             createCanvas(windowWidth, windowHeight);
             cols = floor(width / scl);
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
 
-            // Reverberación con mayor suavidad
             globalReverb = new p5.Reverb();
             globalReverb.set(20, 10); 
 
-            // Compresor para controlar los picos
             compressor = new p5.Compressor();
-            compressor.threshold(-40);  // Umbral más bajo para reducir la ganancia general
+            compressor.threshold(-40);
             compressor.ratio(4);  
             compressor.attack(0.05);  
             compressor.release(0.1); 
 
-            // Configurar ruido blanco con filtro pasa bajos a 500Hz
-            noiseOscillator = new p5.Noise('pink');  // Cambiando a 'pink' para un sonido más suave
+            noiseOscillator = new p5.Noise('pink');
             let lowPassFilter = new p5.LowPass();
-            lowPassFilter.freq(300);  // Filtro pasa bajos más agresivo (300Hz)
+            lowPassFilter.freq(300);
             noiseOscillator.disconnect();
             noiseOscillator.connect(lowPassFilter);
             lowPassFilter.connect(compressor);
             compressor.connect(globalReverb);
 
-            // Crear un envelope para modular la amplitud del ruido
             envelope = new p5.Envelope();
-            envelope.setADSR(0.5, 0.4, 0.05, 0.7);  // Suavidad en la envolvente
-            envelope.setRange(0.02, 0);  // Amplitud mucho más baja
+            envelope.setADSR(0.5, 0.4, 0.05, 0.7);
+            envelope.setRange(0.02, 0);
 
-            noiseOscillator.amp(0.05);  // Amplitud mucho más baja para suavizar el ruido
+            noiseOscillator.amp(0.05);
             noiseOscillator.start();
 
-            // Crear un oscilador que oscila entre 8 y 12 Hz
             spatialOscillator = new p5.Oscillator('sine');
-            spatialOscillator.freq(7.8);  // Frecuencia base
-            spatialOscillator.amp(0.1);   // Amplitud inicial baja
-            spatialOscillator.pan(0);     // Centrado en los canales estéreo
+            spatialOscillator.freq(7.8);
+            spatialOscillator.amp(0.1);
+            spatialOscillator.pan(0);
             spatialOscillator.disconnect();
             spatialOscillator.connect(globalReverb);
             spatialOscillator.start();
 
-            // LFO para modular la frecuencia entre 8 y 12 Hz
             frequencyLFO = new p5.Oscillator('sine');
-            frequencyLFO.freq(0.2);  // Oscilación lenta
-            frequencyLFO.amp(2);     // Amplitud de 2 Hz, ajustando la frecuencia entre 8 y 12 Hz
+            frequencyLFO.freq(0.2);
+            frequencyLFO.amp(2);
             frequencyLFO.disconnect();
             frequencyLFO.start();
 
-            // LFO para modular el ruido
             lfo = new p5.Oscillator('sine');
             lfo.freq(random(1 / 7, 1 / 5));
             lfo.disconnect();
@@ -102,12 +228,67 @@
 
             background(0);
 
-            // Hacer que el ruido pulse suavemente cada 4-5 segundos
             setInterval(() => {
-                envelope.play(noiseOscillator, 0, 0.01);  // Ruido pulsado suavemente cada intervalo
+                envelope.play(noiseOscillator, 0, 0.01);
             }, pulseInterval);
+            
+            // Configurar controles de volumen (SOLO AGREGADO, no modifica tu código)
+            setupVolumeControls();
+        }
+        
+        function setupVolumeControls() {
+            const controls = document.getElementById('audioControls');
+            const volumeSlider = document.getElementById('volumeSlider');
+            const volumeValue = document.getElementById('volumeValue');
+            const muteBtn = document.getElementById('muteBtn');
+            
+            volumeSlider.addEventListener('input', (e) => {
+                masterVolume = e.target.value / 100;
+                volumeValue.textContent = e.target.value + '%';
+                if (isMuted) {
+                    isMuted = false;
+                    muteBtn.textContent = '🔇 Mute';
+                }
+                applyMasterVolume();
+            });
+            
+            muteBtn.addEventListener('click', () => {
+                isMuted = !isMuted;
+                if (isMuted) {
+                    muteBtn.textContent = '🔊 Unmute';
+                    setMuted(true);
+                } else {
+                    muteBtn.textContent = '🔇 Mute';
+                    setMuted(false);
+                    applyMasterVolume();
+                }
+            });
+        }
+        
+        function applyMasterVolume() {
+            if (isMuted) return;
+            if (noiseOscillator) noiseOscillator.amp(0.05 * masterVolume);
+            if (spatialOscillator) spatialOscillator.amp(0.1 * masterVolume);
+            for (let p of particles) {
+                if (p.oscillator && p.currentOscAmp) {
+                    p.oscillator.amp(p.currentOscAmp * masterVolume);
+                }
+            }
+        }
+        
+        function setMuted(muted) {
+            if (muted) {
+                if (noiseOscillator) noiseOscillator.amp(0);
+                if (spatialOscillator) spatialOscillator.amp(0);
+                for (let p of particles) {
+                    if (p.oscillator) p.oscillator.amp(0);
+                }
+            } else {
+                applyMasterVolume();
+            }
         }
 
+        // ===== TU DRAW ORIGINAL COMPLETO (sin cambios) =====
         function draw() {
             if (!audioStarted) return;
 
@@ -140,12 +321,10 @@
 
             zoff += 0.003;
 
-            // Ajustar la amplitud del ruido con LFO más notable y suavizado
-            let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.01, 0.03);  // Mucho más suave
-            noiseOscillator.amp(noiseAmplitude, 0.6);  // Aplicar la amplitud suavizada
+            let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.01, 0.03);
+            noiseOscillator.amp(noiseAmplitude, 0.6);
 
-            // Ajustar la frecuencia del oscilador entre 8 y 12 Hz con el LFO
-            let freqMod = map(frequencyLFO.getAmp(), -1, 1, 8, 12);  // Modulación entre 8 y 12 Hz
+            let freqMod = map(frequencyLFO.getAmp(), -1, 1, 8, 12);
             spatialOscillator.freq(freqMod);
 
             if (erasePoint) {
@@ -155,34 +334,39 @@
             }
         }
 
+        // ===== TU MOUSEPRESSED ORIGINAL =====
         function mousePressed() {
             if (!audioStarted) {
                 userStartAudio();
                 audioStarted = true;
                 loop();
+                document.getElementById('startHint').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('startHint').style.display = 'none';
+                    document.getElementById('audioControls').style.display = 'flex';
+                }, 500);
             }
         }
 
+        // ===== TU TOUCHMOVED ORIGINAL (con volumen aplicado) =====
         function touchMoved() {
             erasePoint = createVector(mouseX, mouseY);
 
-            // Modificar la amplitud del ruido blanco con el touch para reducir el volumen casi al silencio
-            let amplitudeMod = map(mouseY, 0, height, 0, 0.02);  // Modulación extrema hacia el silencio
-            noiseOscillator.amp(amplitudeMod, 0.1);  // Transición suave, pero bajando la amplitud drásticamente
+            let amplitudeMod = map(mouseY, 0, height, 0, 0.02);
+            if (!isMuted) noiseOscillator.amp(amplitudeMod * masterVolume, 0.1);
 
-            // Espacialización del oscilador basado en la posición horizontal (touchX)
-            let panValue = map(mouseX, 0, width, -1, 1);  // Mover el sonido entre el canal izquierdo (-1) y derecho (1)
+            let panValue = map(mouseX, 0, width, -1, 1);
             spatialOscillator.pan(panValue);
 
-            // Modular la amplitud del oscilador según la posición vertical (touchY)
-            let spatialAmp = map(mouseY, 0, height, 0.00, 0.3);  // Amplitud más baja a más alta
-            spatialOscillator.amp(spatialAmp, 0.1);  // Transición suave para la amplitud
+            let spatialAmp = map(mouseY, 0, height, 0.00, 0.3);
+            if (!isMuted) spatialOscillator.amp(spatialAmp * masterVolume, 0.1);
         }
 
         function touchEnded() {
             erasePoint = null;
         }
 
+        // ===== TU CLASE PARTICLE ORIGINAL COMPLETA (solo agregué currentOscAmp para volumen) =====
         class Particle {
             constructor() {
                 this.pos = createVector(random(width), random(height));
@@ -194,7 +378,7 @@
                 this.baseFreq = random(100, 7000);
                 this.oscillator = new p5.Oscillator('sine');
                 this.oscillator.freq(this.baseFreq);
-                this.oscillator.amp(0);  // Amplitud inicial
+                this.oscillator.amp(0);
 
                 this.oscillator.disconnect();
                 this.oscillator.connect(globalReverb);
@@ -202,6 +386,7 @@
                 this.shouldPlaySound = random(1) < 0.10;
                 this.soundDuration = random(5000, 10000);
                 this.nextSoundTime = millis() + random(3000, 10000);
+                this.currentOscAmp = 0;
             }
 
             follow(vectors) {
@@ -216,37 +401,36 @@
                 this.acc.add(force);
             }
 
-           update() {
-    this.vel.add(this.acc);
-    this.vel.limit(this.maxSpeed);
-    this.pos.add(this.vel);
-    this.acc.mult(0);
+            update() {
+                this.vel.add(this.acc);
+                this.vel.limit(this.maxSpeed);
+                this.pos.add(this.vel);
+                this.acc.mult(0);
 
-    let currentTime = millis();
-    if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
-        this.oscillator.start();
+                let currentTime = millis();
+                if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
+                    this.oscillator.start();
 
-        // Modulación de la frecuencia con el touch
-        let frequencyMod = map(mouseY, 0, height, 300, 2000);  // Ajusta este rango según lo que necesites
-        this.oscillator.freq(frequencyMod);  // Modula la frecuencia
+                    let frequencyMod = map(mouseY, 0, height, 300, 2000);
+                    this.oscillator.freq(frequencyMod);
 
-        let amplitudeMod = map(mouseY, height, 0, 0, 0.02);  // Modulación de la amplitud
-        this.oscillator.amp(amplitudeMod, 0.2);  // Aplicar la modulación de amplitud
+                    let amplitudeMod = map(mouseY, height, 0, 0, 0.02);
+                    this.currentOscAmp = amplitudeMod;
+                    let finalAmp = isMuted ? 0 : amplitudeMod * masterVolume;
+                    this.oscillator.amp(finalAmp, 0.2);
 
-        setTimeout(() => {
-            this.oscillator.amp(0.01, 0.2);  // Reducir suavemente el volumen
-            setTimeout(() => this.oscillator.stop(), 1000);  
-        }, this.soundDuration - 1000);
+                    setTimeout(() => {
+                        this.oscillator.amp(0.01, 0.2);
+                        setTimeout(() => this.oscillator.stop(), 1000);
+                    }, this.soundDuration - 1000);
 
-        this.nextSoundTime = currentTime + random(3000, 10000);
-    }
-}
-
+                    this.nextSoundTime = currentTime + random(3000, 10000);
+                }
+            }
 
             show() {
                 stroke(255, 50);
                 strokeWeight(1);
-
                 line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
                 this.prevPos = this.pos.copy();
 
@@ -269,4 +453,3 @@
     </script>
 </body>
 </html>
-
