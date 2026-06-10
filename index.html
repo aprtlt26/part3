@@ -11,7 +11,7 @@
             box-sizing: border-box;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
-            cursor: none;  /* ← OCULTA EL PUNTERO EN TODA LA PÁGINA */
+            cursor: none;
         }
         
         body {
@@ -29,10 +29,9 @@
             left: 0;
             width: 100%;
             height: 100%;
-            cursor: none;  /* ← TAMBIÉN OCULTA EL PUNTERO DENTRO DEL CANVAS */
+            cursor: none;
         }
         
-        /* INTERFAZ DE SONIDO MÁS PERSONALIZADA Y TRANSPARENTE */
         .audio-controls {
             position: fixed;
             top: 20px;
@@ -50,7 +49,6 @@
             font-weight: 400;
             letter-spacing: 0.5px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            transition: all 0.2s ease;
         }
         
         .volume-control {
@@ -161,9 +159,9 @@
     <div class="start-hint" id="startHint">🎧 toca para comenzar</div>
 
     <script>
-        // ========== TU CÓDIGO ORIGINAL OPTIMIZADO (sin cambios visuales internos) ==========
+        // ========== OPTIMIZADO PARA MÓVILES ==========
         let inc = 0.05;
-        let scl = 10;
+        let scl = 12;  // ← optimizado: antes 10, ahora 12 (menos celdas = más rendimiento)
         let cols, rows;
         let zoff = 0;
         let particles = [];
@@ -181,15 +179,15 @@
         let masterVolume = 0.3;
         let isMuted = false;
         
-        // Optimización para móvil
+        // Detección de móvil para ajustes automáticos
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        const PARTICLE_COUNT = isMobile ? 250 : 500;
-        const FRAME_RATE = isMobile ? 50 : 60;
-        const SOUND_PROBABILITY = isMobile ? 0.06 : 0.10;
+        const PARTICLE_COUNT = isMobile ? 280 : 500;      // ← 280 partículas en móvil (antes 500)
+        const TARGET_FPS = isMobile ? 50 : 60;            // ← 50fps en móvil
+        const SOUND_PROB = isMobile ? 0.07 : 0.10;        // ← ligeramente menos sonidos
         
         function setup() {
             createCanvas(windowWidth, windowHeight);
-            frameRate(FRAME_RATE);
+            frameRate(TARGET_FPS);
             
             cols = floor(width / scl);
             rows = floor(height / scl);
@@ -394,7 +392,7 @@
                 this.oscillator.disconnect();
                 this.oscillator.connect(globalReverb);
 
-                this.shouldPlaySound = random(1) < SOUND_PROBABILITY;
+                this.shouldPlaySound = random(1) < SOUND_PROB;
                 this.soundDuration = random(5000, 10000);
                 this.nextSoundTime = millis() + random(3000, 10000);
                 this.currentOscAmp = 0;
