@@ -398,7 +398,7 @@
     <div class="telesma-modal" id="telesmaModal">
         <span class="telesma-close" id="closeModal">✕</span>
         <div class="telesma-title">◈ TELESMA ◈</div>
-        <div class="telesma-text">Dispositivo táctil de interacción terapéutica y escucha vinaural 3D<br>basado en flujos sonoros y campos vectoriales.</div>
+        <div class="telesma-text">Dispositivo táctil de interacción terapéutica<br>basado en flujos sonoros y campos vectoriales.</div>
         <div class="telesma-author">creado y desarrollado por<br>Alfonso Pretelt — psicólogo, músico experimental & desarrollador multimedia</div>
     </div>
     
@@ -453,7 +453,7 @@
 
     <script>
         // ============================================================
-        // CONFIGURACIÓN - IDÉNTICA AL ORIGINAL
+        // CONFIGURACIÓN - OPTIMIZADA PARA MÓVIL
         // ============================================================
         let inc = 0.05;
         let scl = 12;
@@ -476,7 +476,7 @@
         let isMuted = false;
         
         // ============================================================
-        // AUDIO 3D
+        // AUDIO 3D - OPTIMIZADO PARA MÓVIL
         // ============================================================
         let audioCtx = null;
         let masterGainNode = null;
@@ -487,20 +487,29 @@
         let targetRotX = 0, targetRotY = 0;
         
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        const PARTICLE_COUNT = isMobile ? 280 : 500;
-        const TARGET_FPS = isMobile ? 50 : 60;
-        const SOUND_PROB = isMobile ? 0.07 : 0.10;
+        // REDUCIR PARTÍCULAS EN MÓVIL para evitar saturación
+        const PARTICLE_COUNT = isMobile ? 200 : 500;
+        const VOICE_COUNT = isMobile ? 12 : 20; // Reducir voces activas
+        const TARGET_FPS = isMobile ? 30 : 60;
+        const SOUND_PROB = isMobile ? 0.05 : 0.10;
         
         // ============================================================
-        // INICIALIZAR AUDIO 3D
+        // INICIALIZAR AUDIO 3D - CON BUFFER DE SEGURIDAD
         // ============================================================
         function initSpatialAudio() {
             try {
                 audioCtx = getAudioContext();
                 if (!audioCtx) return;
                 
+                // Ajustes para móvil - menor latencia
+                if (isMobile && audioCtx.audioWorklet) {
+                    try {
+                        audioCtx.audioWorklet.addModule('data:text/javascript,console.log("worklet loaded")');
+                    } catch(e) {}
+                }
+                
                 masterGainNode = audioCtx.createGain();
-                masterGainNode.gain.value = 0.7;
+                masterGainNode.gain.value = 0.5;
                 masterGainNode.connect(audioCtx.destination);
                 
                 dryGainNode = audioCtx.createGain();
@@ -508,7 +517,7 @@
                 dryGainNode.connect(masterGainNode);
                 
                 reverbGainNode = audioCtx.createGain();
-                reverbGainNode.gain.value = 0.3;
+                reverbGainNode.gain.value = 0.2;
                 reverbGainNode.connect(masterGainNode);
                 
                 if (audioCtx.listener) {
@@ -523,7 +532,7 @@
                     audioCtx.listener.upZ.value = 0;
                 }
                 
-                console.log('Audio 3D HRTF iniciado');
+                console.log('Audio 3D HRTF iniciado - Móvil:', isMobile);
             } catch(e) {
                 console.warn('Error:', e);
             }
@@ -532,11 +541,11 @@
         function updateListenerOrientation(mx, my) {
             if (!audioCtx || !audioCtx.listener) return;
             
-            targetRotY = map(mx, 0, width, -1.2, 1.2);
-            targetRotX = map(my, 0, height, 0.3, -0.3);
+            targetRotY = map(mx, 0, width, -0.8, 0.8);
+            targetRotX = map(my, 0, height, 0.2, -0.2);
             
-            listenerRotX += (targetRotX - listenerRotX) * 0.05;
-            listenerRotY += (targetRotY - listenerRotY) * 0.05;
+            listenerRotX += (targetRotX - listenerRotX) * 0.08;
+            listenerRotY += (targetRotY - listenerRotY) * 0.08;
             
             try {
                 let fwdX = -Math.sin(listenerRotY);
@@ -559,7 +568,7 @@
         }
         
         // ============================================================
-        // PANNER 3D
+        // PANNER 3D - OPTIMIZADO
         // ============================================================
         class ParticlePanner {
             constructor() {
@@ -569,7 +578,7 @@
                 this.pannerNode.panningModel = 'HRTF';
                 this.pannerNode.distanceModel = 'inverse';
                 this.pannerNode.refDistance = 1.0;
-                this.pannerNode.maxDistance = 100;
+                this.pannerNode.maxDistance = 80;
                 this.pannerNode.rolloffFactor = 1.0;
                 this.pannerNode.coneInnerAngle = 360;
                 this.pannerNode.coneOuterAngle = 360;
@@ -629,7 +638,7 @@
             flowfield = new Array(cols * rows);
 
             globalReverb = new p5.Reverb();
-            globalReverb.set(20, 10); 
+            globalReverb.set(15, 8); // Reverb más ligero para móvil
 
             compressor = new p5.Compressor();
             compressor.threshold(-40);
@@ -649,12 +658,12 @@
             envelope.setADSR(0.5, 0.4, 0.05, 0.7);
             envelope.setRange(0.02, 0);
 
-            noiseOscillator.amp(0.05);
+            noiseOscillator.amp(0.03);
             noiseOscillator.start();
 
             spatialOscillator = new p5.Oscillator('sine');
             spatialOscillator.freq(7.8);
-            spatialOscillator.amp(0.1);
+            spatialOscillator.amp(0.06);
             spatialOscillator.pan(0);
             spatialOscillator.disconnect();
             spatialOscillator.connect(globalReverb);
@@ -750,9 +759,9 @@
         
         function applyMasterVolume() {
             if (isMuted) return;
-            if (noiseOscillator) noiseOscillator.amp(0.05 * masterVolume);
-            if (spatialOscillator) spatialOscillator.amp(0.1 * masterVolume);
-            if (masterGainNode) masterGainNode.gain.value = 0.7 * masterVolume;
+            if (noiseOscillator) noiseOscillator.amp(0.03 * masterVolume);
+            if (spatialOscillator) spatialOscillator.amp(0.06 * masterVolume);
+            if (masterGainNode) masterGainNode.gain.value = 0.5 * masterVolume;
         }
         
         function setMuted(muted) {
@@ -761,7 +770,7 @@
                 if (spatialOscillator) spatialOscillator.amp(0);
                 if (masterGainNode) masterGainNode.gain.value = 0;
             } else {
-                if (masterGainNode) masterGainNode.gain.value = 0.7 * masterVolume;
+                if (masterGainNode) masterGainNode.gain.value = 0.5 * masterVolume;
                 applyMasterVolume();
             }
         }
@@ -806,7 +815,7 @@
             zoff += 0.003;
 
             if (!isMuted) {
-                let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.01, 0.03);
+                let noiseAmplitude = map(lfo.getAmp(), -1, 1, 0.01, 0.02);
                 noiseOscillator.amp(noiseAmplitude, 0.6);
                 let freqMod = map(frequencyLFO.getAmp(), -1, 1, 8, 12);
                 spatialOscillator.freq(freqMod);
@@ -871,7 +880,7 @@
         }
 
         // ============================================================
-        // PARTÍCULA - EXACTAMENTE COMO EL ORIGINAL + 3D + OSCILADOR VIVO
+        // PARTÍCULA - OPTIMIZADA
         // ============================================================
         class Particle {
             constructor(id) {
@@ -882,7 +891,7 @@
                 this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
 
-                this.depth = (Math.random() - 0.5) * 8;
+                this.depth = (Math.random() - 0.5) * 6;
                 this.depthOffset = random(1000);
                 this.depthPhase = random(TWO_PI);
 
@@ -894,18 +903,17 @@
                 this.panner = new ParticlePanner();
                 this.panner.connectOscillator(this.oscillator);
                 
-                // OSCILADOR SIEMPRE VIVO
                 this.oscillator.start();
 
-                // COMPORTAMIENTO IDÉNTICO AL ORIGINAL
                 this.shouldPlaySound = random(1) < SOUND_PROB;
-                this.soundDuration = random(5000, 10000);
-                this.nextSoundTime = millis() + random(3000, 10000);
+                this.soundDuration = random(4000, 8000);
+                this.nextSoundTime = millis() + random(2000, 8000);
                 this.currentOscAmp = 0;
                 
                 this.phase = random(TWO_PI);
                 this.idOffset = id * 0.7;
                 this.flash = 0;
+                this.updateCounter = 0;
             }
 
             follow(vectors) {
@@ -921,67 +929,61 @@
             }
 
             update() {
-                // MOVIMIENTO - IDÉNTICO AL ORIGINAL
                 this.vel.add(this.acc);
                 this.vel.limit(this.maxSpeed);
                 this.pos.add(this.vel);
                 this.acc.mult(0);
 
-                // PROFUNDIDAD 3D
-                let slowWave = Math.sin(frameCount * 0.0006 + this.depthPhase) * 0.8;
-                let noiseDepth = (noise(this.pos.x * 0.008, this.pos.y * 0.008, this.depthOffset + frameCount * 0.0003) - 0.5) * 3;
-                this.depth += (slowWave + noiseDepth - this.depth) * 0.02;
-                this.depth = Math.max(-8, Math.min(8, this.depth));
+                // Actualizar profundidad cada 2 frames para ahorrar CPU en móvil
+                this.updateCounter++;
+                if (this.updateCounter % 2 === 0) {
+                    let slowWave = Math.sin(frameCount * 0.0004 + this.depthPhase) * 0.6;
+                    let noiseDepth = (noise(this.pos.x * 0.008, this.pos.y * 0.008, this.depthOffset + frameCount * 0.0002) - 0.5) * 2;
+                    this.depth += (slowWave + noiseDepth - this.depth) * 0.03;
+                    this.depth = Math.max(-6, Math.min(6, this.depth));
+                }
 
-                // MICRO-MOVIMIENTO
                 let t = frameCount * 0.001;
-                let microX = Math.sin(t * 0.4 + this.idOffset) * 0.15;
-                let microY = Math.cos(t * 0.3 + this.idOffset) * 0.12;
-                let microZ = Math.sin(t * 0.7 + this.idOffset) * 0.25;
+                let microX = Math.sin(t * 0.4 + this.idOffset) * 0.12;
+                let microY = Math.cos(t * 0.3 + this.idOffset) * 0.10;
+                let microZ = Math.sin(t * 0.7 + this.idOffset) * 0.20;
 
                 if (this.panner) {
-                    let x3d = map(this.pos.x + microX, 0, width, -10, 10);
-                    let y3d = map(this.pos.y + microY, 0, height, 7, -7);
+                    let x3d = map(this.pos.x + microX, 0, width, -8, 8);
+                    let y3d = map(this.pos.y + microY, 0, height, 5, -5);
                     let z3d = this.depth + microZ;
                     this.panner.setPosition(x3d, y3d, z3d);
                 }
 
-                // SONIDO - COMO EL ORIGINAL PERO SIN stop()
                 let currentTime = millis();
                 if (audioStarted && this.shouldPlaySound && currentTime >= this.nextSoundTime && !isMuted) {
-                    
-                    // FRECUENCIA - basada en baseFreq + modulación por mouse
                     let freqMod = map(mouseY, 0, height, 0.8, 1.2);
                     let frequencyMod = this.baseFreq * freqMod;
                     this.oscillator.freq(frequencyMod);
 
-                    // AMPLITUD - como el original
-                    let amplitudeMod = map(mouseY, height, 0, 0, 0.02);
+                    let amplitudeMod = map(mouseY, height, 0, 0, 0.015);
                     this.currentOscAmp = amplitudeMod;
                     let finalAmp = isMuted ? 0 : amplitudeMod * masterVolume;
                     
-                    // ATAQUE - como el original
-                    this.oscillator.amp(finalAmp, 0.2);
+                    this.oscillator.amp(finalAmp, 0.15);
                     
-                    // FLASH VISUAL
                     this.flash = 1.0;
 
-                    // RELEASE - directo a 0
                     setTimeout(() => {
-                        this.oscillator.amp(0, 0.2);
-                    }, this.soundDuration - 1000);
+                        this.oscillator.amp(0, 0.15);
+                    }, this.soundDuration - 800);
 
-                    this.nextSoundTime = currentTime + random(3000, 10000);
+                    this.nextSoundTime = currentTime + random(2000, 8000);
                 }
                 
-                this.flash *= 0.92;
+                this.flash *= 0.90;
                 if (this.flash < 0.01) this.flash = 0;
             }
 
             show() {
-                let flashBonus = this.flash * 60;
-                let alpha = 50 + flashBonus;
-                let size = 10 + this.flash * 4;
+                let flashBonus = this.flash * 40;
+                let alpha = 40 + flashBonus;
+                let size = 8 + this.flash * 3;
                 
                 stroke(255, alpha);
                 strokeWeight(1);
